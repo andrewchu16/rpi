@@ -15,6 +15,7 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certs:/etc/letsencrypt:ro
+      - /srv/nginx-logs:/var/log/nginx
       - nginx-cache:/var/cache/nginx
       - ./webroot:/var/www/certbot:ro
     depends_on: [api]
@@ -29,6 +30,7 @@ services:
 
   certbot:
     image: certbot/certbot:arm64v8-latest
+    restart: unless-stopped
     volumes:
       - ./certs:/etc/letsencrypt
       - ./webroot:/var/www/certbot
