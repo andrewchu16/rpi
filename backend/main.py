@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
+from config import Config
+from routes import auth_router, health_router
+
 
 app = FastAPI()
 
@@ -14,13 +16,12 @@ app.add_middleware(
 )
 """
 
+app.include_router(auth_router)
+app.include_router(health_router)
+
 @app.get("/")
 async def root():
     return {"message": "Hello, World!"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "timestamp": datetime.now()}
 
 if __name__ == '__main__':
     import uvicorn
@@ -29,6 +30,7 @@ if __name__ == '__main__':
             "main:app",
             host="0.0.0.0",
             port=8000,
+            reload=Config.DEBUG
     )
 
 

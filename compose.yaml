@@ -1,6 +1,8 @@
 services:
   api:
-    build: .
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     restart: unless-stopped
     networks: [web]
     security_opt: [ "no-new-privileges:true" ]
