@@ -1,13 +1,16 @@
 from fastapi import HTTPException, status
-import services.auth_service as auth_service
+from models.auth import LoginSuccess
+from services import AuthService
 
 
-def login(password: str):
-    try:
-        return auth_service.login(password)
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect access code",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+class AuthController:
+    @staticmethod
+    def login(password: str) -> LoginSuccess:
+        try:
+            return AuthService.login(password)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect access code",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from e

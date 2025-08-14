@@ -4,7 +4,29 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    networks: [web]
+    networks: 
+      - web
+      - db
+    security_opt: [ "no-new-privileges:true" ]
+    cap_drop: [ "ALL" ]
+    depends_on: [db]
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=rpi_db
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    networks: [db]
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=rpi_db
+    volumes:
+      - db_data:/var/lib/postgresql/data
     security_opt: [ "no-new-privileges:true" ]
     cap_drop: [ "ALL" ]
 
@@ -42,7 +64,11 @@ services:
 
 networks:
   web:
+    driver: bridge
+  db:
+    driver: bridge
 
 volumes:
   nginx-cache:
+  db_data:
 

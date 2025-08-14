@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import Config
-from routes import auth_router, health_router
+from config import DEBUG
+from routes import auth_router, health_router, upload_router
 
 
 app = FastAPI()
@@ -18,6 +18,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(health_router)
+app.include_router(upload_router)
 
 @app.get("/")
 async def root():
@@ -30,7 +31,7 @@ if __name__ == '__main__':
             "main:app",
             host="0.0.0.0",
             port=8000,
-            reload=Config.DEBUG
+            reload=DEBUG
     )
 
 

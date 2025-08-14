@@ -2,3 +2,5 @@
 certs/
 webroot/.well-known/acme-challenge/
 nginx-cache/
+
+db_data/

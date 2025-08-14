@@ -52,3 +52,8 @@ class Token(BaseModel):
             "iat": self.iat.timestamp(),
             "exp": self.exp.timestamp()
         }
+
+
+class LoginSuccess(BaseModel):
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Type of the token, usually 'bearer'")
