@@ -1,0 +1,36 @@
+---
+description: When trying to debug installation, packages, and environment-related issues
+alwaysApply: false
+---
+# UV Dependency Management
+
+This project uses **UV** for Python dependency management. UV is a fast Python package installer and resolver.
+
+## Key Files
+- [backend/pyproject.toml](mdc:backend/pyproject.toml) - Project configuration and dependencies
+- [backend/uv.lock](mdc:backend/uv.lock) - Locked dependency versions
+
+## Usage
+- Use `uv add <package>` to add new dependencies
+- Use `uv sync` to install dependencies
+- Use `uv run <command>` to run commands in the virtual environment
+- Dependencies are managed through pyproject.toml, not requirements.txt
+
+## Virtual Environment
+UV automatically creates and manages virtual environments. The project uses UV's built-in virtual environment management rather than traditional venv or conda.
+# UV Dependency Management
+
+This project uses **UV** for Python dependency management. UV is a fast Python package installer and resolver.
+
+## Key Files
+- [backend/pyproject.toml](mdc:backend/pyproject.toml) - Project configuration and dependencies
+- [backend/uv.lock](mdc:backend/uv.lock) - Locked dependency versions
+
+## Usage
+- Use `uv add <package>` to add new dependencies
+- Use `uv sync` to install dependencies
+- Use `uv run <command>` to run commands in the virtual environment
+- Dependencies are managed through pyproject.toml, not requirements.txt
+
+## Virtual Environment
+UV automatically creates and manages virtual environments. The project uses UV's built-in virtual environment management rather than traditional venv or conda.

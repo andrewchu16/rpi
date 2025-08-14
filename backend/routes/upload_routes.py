@@ -2,15 +2,16 @@ from fastapi import APIRouter, Depends, File, UploadFile
 
 from security.token import verify_access_token
 from controllers import UploadController
+from models.uploads import MarkdownUploadResponse, ImageUploadResponse, UploadSuccessResponse
 
 router = APIRouter(prefix="/upload", tags=["Upload"])
 
 
-@router.post("/md")
+@router.post("/md", response_model=UploadSuccessResponse)
 async def upload_markdown(
     file: UploadFile = File(..., description="Markdown file"),
     _: bool = Depends(verify_access_token)
-):
+) -> UploadSuccessResponse:
     """
     Upload a markdown file (max 4MB)
     
@@ -20,16 +21,16 @@ async def upload_markdown(
     - Content must be valid UTF-8 text
     """
     result = await UploadController.upload_markdown(file)
-    return {
-        "message": "Markdown file uploaded successfully",
-        "file_info": result
-    }
+    return UploadSuccessResponse(
+        message="Markdown file uploaded successfully",
+        file_info=result
+    )
 
-@router.post("/image")
+@router.post("/image", response_model=UploadSuccessResponse)
 async def upload_image(
     file: UploadFile = File(..., description="Image file"),
     _: bool = Depends(verify_access_token)
-):
+) -> UploadSuccessResponse:
     """
     Upload an image file (max 4MB)
     
@@ -42,11 +43,7 @@ async def upload_image(
     """
     result = await UploadController.upload_image(file)
     
-    # We don't want to return the Pillow Image object in the response
-    if "image" in result:
-        del result["image"]
-        
-    return {
-        "message": "Image uploaded successfully",
-        "file_info": result
-    }
+    return UploadSuccessResponse(
+        message="Image uploaded successfully",
+        file_info=result
+    )

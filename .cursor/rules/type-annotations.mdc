@@ -1,0 +1,27 @@
+--
+alwaysApply: true
+---
+# Type Annotations
+
+Use type annotations extensively throughout the codebase:
+
+## Function Signatures
+```python
+def process_file(file_bytes: bytes, file_type: str) -> str:
+    pass
+```
+
+## Return Types
+Always specify return types:
+```python
+def get_user(user_id: int) -> Optional[User]:
+    pass
+```
+
+## Import Type Hints
+```python
+from typing import List, Dict, Optional, Union
+```
+
+## Examples from Codebase
+See [backend/utils/file_parser.py](mdc:backend/utils/file_parser.py) for examples of proper type annotations in utility functions.

@@ -1,0 +1,34 @@
+---
+description: Describes how routes, controllers, services, and models interact with each, and what should go where.
+alwaysApply: false
+---
+# Backend Architecture
+
+This project follows a layered architecture pattern with clear separation of concerns:
+
+## Routes Layer
+Routes are defined in [backend/routes/](mdc:backend/routes/) and serve as the API entry points. They should:
+- Define required parameters, return types, and dependencies
+- Call corresponding functions in controllers
+- Handle HTTP-specific concerns (request/response formatting)
+
+## Controllers Layer  
+Controllers in [backend/controllers/](mdc:backend/controllers/) handle:
+- Exception handling: catch exceptions from services and convert to HTTP exceptions
+- Input validation: ensure data is ready for services (e.g., file size limits)
+- Request/response transformation
+- Controllers use static methods for their functions
+
+## Services Layer
+Services in [backend/services/](mdc:backend/services/) contain:
+- Business logic implementation
+- Database interactions
+- External API calls
+- Logic-related error throwing
+- Services use static methods for their functions
+
+## Models Layer
+Data models are defined in [backend/models/](mdc:backend/models/) for database schema and data structures.
+
+## Utils Layer
+Utility functions like [backend/utils/file_parser.py](mdc:backend/utils/file_parser.py) provide reusable functionality across the application.

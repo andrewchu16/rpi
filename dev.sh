@@ -21,9 +21,5 @@ docker compose -f compose.dev.yaml down
 echo -e "${BLUE}Building and starting API container...${NC}"
 docker compose -f compose.dev.yaml up --build
 
-# This part will execute when the user presses Ctrl+C
-trap 'echo -e "${YELLOW}Shutting down development environment...${NC}" && docker compose -f compose.dev.yaml down' INT
-
-# Note: The following instructions are not actually executed due to the trap above
-echo -e "${YELLOW}To stop the container, press Ctrl+C or run:${NC}"
+echo -e "${YELLOW}To stop the container, run:${NC}"
 echo -e "${YELLOW}docker compose -f compose.dev.yaml down${NC}"

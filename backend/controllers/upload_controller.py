@@ -1,6 +1,7 @@
 from fastapi import UploadFile, HTTPException, status
 from config import MAX_FILE_SIZE
 from services import UploadService
+from models.uploads import MarkdownUploadResponse, ImageUploadResponse
 
 
 class UploadController:
@@ -20,7 +21,7 @@ class UploadController:
         return file_size
 
     @staticmethod
-    async def upload_markdown(file: UploadFile):
+    async def upload_markdown(file: UploadFile) -> MarkdownUploadResponse:
         """Guard and delegate markdown processing to service."""
         # Check file size
         file_size = UploadController._check_file_size(file)
@@ -50,7 +51,7 @@ class UploadController:
         return await UploadService.process_markdown(file, file_size)
 
     @staticmethod
-    async def upload_image(file: UploadFile):
+    async def upload_image(file: UploadFile) -> ImageUploadResponse:
         """Guard and delegate image processing to service."""
         # Check file size
         file_size = UploadController._check_file_size(file)
