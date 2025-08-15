@@ -6,3 +6,5 @@ __pycache__/
 certs/
 webroot/.well-known/acme-challenge/
 nginx-cache/
+
+.env
