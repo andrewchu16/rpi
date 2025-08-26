@@ -1,15 +1,15 @@
 from fastapi import APIRouter
-from controllers import AuthController
-from models.auth import LoginSuccess
-
+from .schemas import LoginSuccess, LoginRequest
+from .service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-@router.post("/login")
-async def login(password: str) -> LoginSuccess:
+
+@router.post("/login", response_model=LoginSuccess)
+async def login(login_request: LoginRequest) -> LoginSuccess:
     """
     Authenticate using the access code to get a JWT token.
     
     The username field is ignored, only the password is checked against the access code.
     """
-    return AuthController.login(password)
+    return AuthService.login(login_request.password)

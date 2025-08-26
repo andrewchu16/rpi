@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from typing import Dict, Any
 
+
 class Token(BaseModel):
     iat: datetime = Field(..., description="Issued at time")
     exp: datetime = Field(..., description="Expiration time")
@@ -57,3 +58,7 @@ class Token(BaseModel):
 class LoginSuccess(BaseModel):
     access_token: str = Field(..., description="JWT access token")
     token_type: str = Field(default="bearer", description="Type of the token, usually 'bearer'")
+
+
+class LoginRequest(BaseModel):
+    password: str = Field(..., description="Access code for authentication")

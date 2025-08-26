@@ -6,8 +6,6 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
     environment:
       - PYTHONUNBUFFERED=1
       - DEBUG=True
@@ -16,8 +14,18 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=rpi_db
+    env_file:
+      - ./backend/.env
     networks: [db]
     depends_on: [db]
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - .venv/
+            - .git/
 
   db:
     image: postgres:16-alpine

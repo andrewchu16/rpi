@@ -2,6 +2,7 @@ from PIL import Image
 import pytesseract
 from io import BytesIO
 
+
 def get_md_content(markdown_bytes: bytes) -> str:
     """
     Convert markdown document from bytes to string.
@@ -10,16 +11,17 @@ def get_md_content(markdown_bytes: bytes) -> str:
         markdown_bytes: The markdown document as bytes
         
     Returns:
-        The markdown document as a string
+        str: The markdown document as a string
     """
     return markdown_bytes.decode('utf-8')
+
 
 def get_image_content(image_bytes: bytes) -> str:
     """
     Extracts text content from an image using OCR.
 
     Args:
-        image_bytes (bytes): The image file in bytes.
+        image_bytes: The image file in bytes.
 
     Returns:
         str: The extracted text content from the image.

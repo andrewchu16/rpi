@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import DEBUG
-from routes import auth_router, health_router, upload_router
-
+from .auth.router import router as auth_router
+from .health.router import router as health_router
+from .upload.router import router as upload_router
 
 app = FastAPI()
 
@@ -23,15 +23,4 @@ app.include_router(upload_router)
 @app.get("/")
 async def root():
     return {"message": "Hello, World!"}
-
-if __name__ == '__main__':
-    import uvicorn
-    print("Starting AI")
-    uvicorn.run(
-            "main:app",
-            host="0.0.0.0",
-            port=8000,
-            reload=DEBUG
-    )
-
 
