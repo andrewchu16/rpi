@@ -2,6 +2,7 @@ import json
 import logging
 import logging.config
 import atexit
+from .config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .auth.router import router as auth_router
@@ -9,7 +10,7 @@ from .health.router import router as health_router
 from .upload.router import router as upload_router
 from logging.handlers import QueueHandler
 
-app = FastAPI()
+app = FastAPI(docs_url="/docs" if settings.debug else None)
 
 """
 app.add_middleware(

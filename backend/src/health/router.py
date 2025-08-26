@@ -12,9 +12,6 @@ router = APIRouter(prefix="/health", tags=["Health"])
 async def health_check() -> HealthResponse:
     """
     Basic health check endpoint.
-    
-    Returns:
-        HealthResponse: Health status and timestamp
     """
     return HealthResponse(status=HEALTH_STATUS, timestamp=datetime.now())
 
@@ -25,12 +22,6 @@ async def health_login(token: Token = Depends(get_current_user)) -> HealthLoginR
     Health check endpoint that requires a valid JWT token.
     
     This endpoint is protected and will return the token information if the token is valid.
-    
-    Args:
-        token: The authenticated user's JWT token
-        
-    Returns:
-        HealthLoginResponse: Health status and token information
     """
     return HealthLoginResponse(
         status=HEALTH_STATUS,
