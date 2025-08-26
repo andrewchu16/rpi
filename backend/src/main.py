@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth.router import router as auth_router
 from .health.router import router as health_router
 from .upload.router import router as upload_router
+from .files.router import router as files_router
 from logging.handlers import QueueHandler
 
 app = FastAPI(docs_url="/docs" if settings.debug else None)
@@ -40,6 +41,7 @@ logger.info("Starting the application")
 app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(upload_router)
+app.include_router(files_router)
 
 @app.get("/")
 async def root():
