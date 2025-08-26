@@ -3,12 +3,14 @@ from fastapi import UploadFile
 from PIL import Image
 import io
 from typing import Tuple
+import PyPDF2
 from .config import upload_settings
-from .constants import MARKDOWN_UPLOAD_SUBDIR, IMAGE_UPLOAD_SUBDIR
+from .constants import MARKDOWN_UPLOAD_SUBDIR, IMAGE_UPLOAD_SUBDIR, PDF_UPLOAD_SUBDIR
 from .exceptions import (
     FileTooLargeError,
     InvalidMarkdownTypeError,
     InvalidImageTypeError,
+    InvalidPDFTypeError,
     InvalidUTF8Error
 )
 
@@ -81,6 +83,22 @@ def validate_image_file(file: UploadFile) -> None:
         raise InvalidImageTypeError()
 
 
+def validate_pdf_file(file: UploadFile) -> None:
+    """
+    Validate that the uploaded file is a valid PDF.
+    
+    Args:
+        file: The uploaded file
+        
+    Raises:
+        InvalidPDFTypeError: If the file is not a valid PDF
+    """
+    content_type = file.content_type or ""
+    
+    if content_type not in upload_settings.allowed_pdf_types:
+        raise InvalidPDFTypeError()
+
+
 def save_file_to_disk(content: bytes, filename: str, subdir: str) -> str:
     """
     Save file content to disk in the specified subdirectory.
@@ -120,3 +138,28 @@ def get_image_metadata(content: bytes) -> Tuple[int, int, str, str]:
     mode = image.mode
     
     return width, height, img_format, mode
+
+
+def get_pdf_metadata(content: bytes) -> Tuple[int, str]:
+    """
+    Extract metadata from PDF content.
+    
+    Args:
+        content: PDF content as bytes
+        
+    Returns:
+        Tuple[int, str]: (page_count, extracted_text)
+    """
+    pdf_file = io.BytesIO(content)
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
+    
+    page_count = len(pdf_reader.pages)
+    extracted_text = ""
+    
+    # Extract text from all pages
+    for page in pdf_reader.pages:
+        page_text = page.extract_text()
+        if page_text:
+            extracted_text += page_text + "\n"
+    
+    return page_count, extracted_text.strip()

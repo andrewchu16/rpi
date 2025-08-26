@@ -3,6 +3,7 @@ from .constants import (
     FILE_TOO_LARGE_MESSAGE,
     INVALID_MARKDOWN_TYPE_MESSAGE,
     INVALID_IMAGE_TYPE_MESSAGE,
+    INVALID_PDF_TYPE_MESSAGE,
     INVALID_UTF8_MESSAGE
 )
 
@@ -30,6 +31,12 @@ class InvalidImageTypeError(UploadError):
     """Raised when the uploaded file is not a valid image"""
     def __init__(self):
         super().__init__(detail=INVALID_IMAGE_TYPE_MESSAGE, status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
+
+
+class InvalidPDFTypeError(UploadError):
+    """Raised when the uploaded file is not a valid PDF"""
+    def __init__(self):
+        super().__init__(detail=INVALID_PDF_TYPE_MESSAGE, status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
 
 class InvalidUTF8Error(UploadError):

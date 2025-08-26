@@ -21,3 +21,8 @@ class ImageDocument(BaseDocument):
 class MarkdownDocument(BaseDocument):
     """Model for markdown documents with stripped metadata."""
     content: str = Field(..., description="Markdown content with metadata stripped out")
+
+
+class PDFDocument(BaseDocument):
+    """Model for PDF documents with extracted text content."""
+    content: str = Field(..., description="Extracted text content from the PDF")

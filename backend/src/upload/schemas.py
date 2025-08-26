@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Union
 from uuid import UUID
 
 
@@ -25,7 +25,31 @@ class ImageUploadResponse(BaseUploadResponse):
     mode: str = Field(..., description="Image color mode (RGB, RGBA, etc.)")
 
 
+class PDFUploadResponse(BaseUploadResponse):
+    """Response model for PDF file uploads."""
+    page_count: int = Field(..., description="Number of pages in the PDF")
+    text_length: int = Field(..., description="Length of the extracted text content in characters")
+
+
 class UploadSuccessResponse(BaseModel):
     """Wrapper response for successful uploads."""
     message: str = Field(..., description="Success message")
     file_info: BaseUploadResponse = Field(..., description="File upload information")
+
+
+class BulkUploadItem(BaseModel):
+    """Individual file upload result in bulk upload."""
+    filename: str = Field(..., description="Original filename of the uploaded file")
+    success: bool = Field(..., description="Whether the upload was successful")
+    message: str = Field(..., description="Success or error message")
+    file_info: Optional[Union[MarkdownUploadResponse, ImageUploadResponse, PDFUploadResponse]] = Field(
+        None, description="File upload information (if successful)"
+    )
+
+
+class BulkUploadResponse(BaseModel):
+    """Response model for bulk file uploads."""
+    total_files: int = Field(..., description="Total number of files processed")
+    successful_uploads: int = Field(..., description="Number of successfully uploaded files")
+    failed_uploads: int = Field(..., description="Number of failed uploads")
+    results: List[BulkUploadItem] = Field(..., description="Results for each uploaded file")

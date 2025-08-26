@@ -35,6 +35,13 @@ class UploadSettings(BaseSettings):
         ],
         description="Allowed MIME types for image files"
     )
+    
+    allowed_pdf_types: List[str] = Field(
+        default=[
+            "application/pdf"
+        ],
+        description="Allowed MIME types for PDF files"
+    )
 
 
 # Create a global upload settings instance
