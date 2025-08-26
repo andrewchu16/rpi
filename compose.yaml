@@ -9,13 +9,18 @@ services:
       - db
     security_opt: [ "no-new-privileges:true" ]
     cap_drop: [ "ALL" ]
-    depends_on: [db]
+    depends_on:
+      - db
     environment:
       - DATABASE_HOST=db
       - DATABASE_PORT=5432
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=rpi_db
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/logs:/app/logs
 
   db:
     image: postgres:16-alpine

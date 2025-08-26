@@ -14,10 +14,10 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=rpi_db
-    env_file:
-      - ./backend/.env
-    networks: [db]
-    depends_on: [db]
+    networks:
+      - db
+    depends_on:
+      - db
     develop:
       watch:
         - action: sync
@@ -26,6 +26,10 @@ services:
           ignore:
             - .venv/
             - .git/
+    volumes:
+      - ./backend/logs:/app/logs
+    env_file:
+      - ./backend/.env
 
   db:
     image: postgres:16-alpine

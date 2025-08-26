@@ -1,34 +1,88 @@
 ---
-description: Describes how routes, controllers, services, and models interact with each, and what should go where.
+description: Describes how routes, services, and models interact with each, and what should go where.
 alwaysApply: false
 ---
 # Backend Architecture
 
-This project follows a layered architecture pattern with clear separation of concerns:
+This project follows a modular, domain-driven architecture pattern with clear separation of concerns:
 
-## Routes Layer
-Routes are defined in [backend/routes/](mdc:backend/routes/) and serve as the API entry points. They should:
+## Module Structure
+The backend is organized into domain-specific modules under `backend/src/`:
+
+### Auth Module (`backend/src/auth/`)
+- **router.py**: FastAPI routes for authentication endpoints
+- **service.py**: Business logic for authentication (instance-based, exports `auth_service`)
+- **schemas.py**: Pydantic models for request/response validation
+- **models.py**: Database models (if needed)
+- **dependencies.py**: FastAPI dependencies (e.g., `get_current_user`)
+- **config.py**: Module-specific configuration
+- **constants.py**: Module constants
+- **exceptions.py**: Custom exceptions for the module
+- **utils.py**: Utility functions (e.g., JWT token creation)
+
+### Upload Module (`backend/src/upload/`)
+- **router.py**: FastAPI routes for file upload endpoints
+- **service.py**: Business logic for file processing (instance-based, exports `upload_service`)
+- **schemas.py**: Pydantic models for request/response validation
+- **models.py**: Database models for documents
+- **config.py**: Module-specific configuration
+- **constants.py**: Module constants
+- **exceptions.py**: Custom exceptions for the module
+- **utils.py**: Utility functions (file validation, processing)
+
+### Health Module (`backend/src/health/`)
+- **router.py**: FastAPI routes for health check endpoints
+- **schemas.py**: Pydantic models for health responses
+- **constants.py**: Module constants
+
+## Shared Components (`backend/src/`)
+- **main.py**: FastAPI application entry point
+- **config.py**: Global application configuration
+- **database.py**: Database connection and pool management
+- **exceptions.py**: Global exception classes
+- **pagination.py**: Pagination utilities
+- **utils.py**: Shared utility functions
+
+## Architecture Patterns
+
+### Router Layer
+Routers serve as the API entry points and should:
 - Define required parameters, return types, and dependencies
-- Call corresponding functions in controllers
 - Handle HTTP-specific concerns (request/response formatting)
+- Call corresponding methods on service instances
+- Import service instances: `from .service import upload_service`
 
-## Controllers Layer  
-Controllers in [backend/controllers/](mdc:backend/controllers/) handle:
-- Exception handling: catch exceptions from services and convert to HTTP exceptions
-- Input validation: ensure data is ready for services (e.g., file size limits)
-- Request/response transformation
-- Controllers use static methods for their functions
+### Service Layer
+Services contain business logic and should:
+- Be instance-based (not static methods)
+- Export singleton instances: `service_instance = ServiceClass()`
+- Handle database interactions
+- Implement business logic
+- Throw logic-related errors
+- Be imported as instances in routers
 
-## Services Layer
-Services in [backend/services/](mdc:backend/services/) contain:
-- Business logic implementation
-- Database interactions
-- External API calls
-- Logic-related error throwing
-- Services use static methods for their functions
+### Schema Layer
+Pydantic models for:
+- Request validation
+- Response serialization
+- Type safety throughout the application
 
-## Models Layer
-Data models are defined in [backend/models/](mdc:backend/models/) for database schema and data structures.
+### Model Layer
+Database models for:
+- Database schema representation
+- Data structure definitions
 
-## Utils Layer
-Utility functions like [backend/utils/file_parser.py](mdc:backend/utils/file_parser.py) provide reusable functionality across the application.
+### Utils Layer
+Utility functions for:
+- Reusable functionality across modules
+- File processing, validation, etc.
+- Module-specific utilities in each module's `utils.py`
+
+## Key Principles
+
+1. **Modular Organization**: Code is organized by business domain rather than technical layers
+2. **Instance-based Services**: Services use instance methods, not static methods
+3. **Singleton Pattern**: Services export singleton instances for dependency injection
+4. **Type Safety**: Extensive use of type annotations and Pydantic models
+5. **Clear Boundaries**: Each module contains its own router, service, schemas, and utilities
+6. **Shared Components**: Common functionality is shared through the root `src/` directory
