@@ -24,15 +24,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-"""
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure as needed for production
+    allow_origins=["http://localhost:3000", "http://frontend:3000"],  # Frontend URLs
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-"""
 
 # Setup logging at module level
 def setup_logging():

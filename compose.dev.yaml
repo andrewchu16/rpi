@@ -1,4 +1,29 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://api:8000
+    networks:
+      - app
+    depends_on:
+      - api
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+            - .next/
+            - .git/
+    command: ["npm", "run", "dev"]
+
   api:
     build: 
       context: ./backend
@@ -16,6 +41,7 @@ services:
       - DATABASE_NAME=rpi_db
     networks:
       - db
+      - app
     depends_on:
       - db
     develop:
@@ -47,6 +73,8 @@ services:
 
 networks:
   db:
+    driver: bridge
+  app:
     driver: bridge
 
 volumes:
