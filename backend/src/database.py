@@ -1,4 +1,6 @@
 import asyncpg
+import os
+from pathlib import Path
 from .config import settings
 
 
@@ -38,6 +40,35 @@ async def get_db_pool() -> asyncpg.Pool:
     return pool
 
 
+async def create_tables() -> None:
+    """
+    Create database tables if they don't already exist.
+    Reads the SQL schema from database_schema.sql and executes it.
+    """
+    try:
+        # Get the path to the database schema file
+        schema_file_path = Path(__file__).parent.parent / "database_schema.sql"
+        
+        # Read the SQL schema
+        with open(schema_file_path, 'r') as f:
+            schema_sql = f.read()
+        
+        # Connect to database and execute schema
+        conn = await connect_to_db()
+        try:
+            await conn.execute(schema_sql)
+            print("Database tables created successfully")
+        finally:
+            await conn.close()
+            
+    except FileNotFoundError:
+        print(f"Schema file not found at {schema_file_path}")
+        raise
+    except Exception as e:
+        print(f"Error creating database tables: {e}")
+        raise
+
+
 async def test_connection() -> bool:
     """
     Test the database connection and return True if successful.
@@ -57,4 +88,5 @@ async def test_connection() -> bool:
             print(f"Database connection test failed: {e}")
             await conn.close()
             return False
+    print("Database connection test failed")
     return False

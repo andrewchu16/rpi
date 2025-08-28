@@ -2,6 +2,7 @@ import json
 import logging
 import logging.config
 import atexit
+from contextlib import asynccontextmanager
 from .config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,9 +10,19 @@ from .auth.router import router as auth_router
 from .health.router import router as health_router
 from .upload.router import router as upload_router
 from .files.router import router as files_router
+from .database import test_connection, create_tables
 from logging.handlers import QueueHandler
 
-app = FastAPI(docs_url="/docs" if settings.debug else None)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await test_connection()
+    await create_tables()
+    yield
+
+app = FastAPI(
+    docs_url="/docs" if settings.debug else None,
+    lifespan=lifespan
+)
 
 """
 app.add_middleware(
