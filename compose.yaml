@@ -1,10 +1,13 @@
 services:
   api:
-    build: .
+    build: ./backend
     restart: unless-stopped
     networks: [web]
     security_opt: [ "no-new-privileges:true" ]
     cap_drop: [ "ALL" ]
+    environment:
+      - DEBUG=false
+      - ALLOWED_ORIGINS=["chat.andrewchu.ca"]
 
   nginx:
     image: nginx:1.29.0
