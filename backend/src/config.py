@@ -1,11 +1,15 @@
 from pydantic_settings import BaseSettings
 
 
-class Config(BaseSettings):
-    # model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
+class Settings(BaseSettings):
     debug: bool = False
     allowed_origins: list[str] = ["*"]
+    
+    # Database settings
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/chatdb"
+    database_echo: bool = False
+    
 
 
-config = Config()
+config = Settings()
+
