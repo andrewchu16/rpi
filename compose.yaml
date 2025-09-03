@@ -28,7 +28,8 @@ services:
     depends_on:
       - postgres
     env_file:
-      - .env
+      - path: ./.env
+        required: false
 
   nginx:
     image: nginx:1.29.0

@@ -8,16 +8,15 @@ from .schema import (
     ChatResponseOutput,
     ChatResponseCacheInfo,
     ChatResponseProcessingInfo,
-    MessageCreate,
-    CacheInfoCreate,
-    ProcessingInfoCreate,
 )
+from .services.llm import LLM
 from src.models import Message, CacheInfo, ProcessingInfo
 
 
 class ChatController:
     def __init__(self):
-        pass
+        """Initialize the chat controller with MLX-based LLM service."""
+        self.llm = LLM()
 
     def get_info(self):
         return {
@@ -51,10 +50,14 @@ class ChatController:
         db.add(user_message_db)
         await db.flush()  # Get the ID without committing
 
+        # Generate AI response using MLX LLM
+        start_time = datetime.now(timezone.utc)
+        ai_response_content = await self.llm.generate_response(chat.messages)
+        end_time = datetime.now(timezone.utc)
+
         # Create AI response message
-        ai_response_content = f"Response to: {last_user_message.content}"
         ai_message_db = Message(
-            sender="AI", content=ai_response_content, timestamp=datetime.now(timezone.utc)
+            sender="AI", content=ai_response_content, timestamp=end_time
         )
         db.add(ai_message_db)
         await db.flush()  # Get the ID without committing
@@ -87,8 +90,8 @@ class ChatController:
         processing_info = None
         processing_info_db = ProcessingInfo(
             message_id=ai_message_db.id,
-            start_timestamp=datetime.now(timezone.utc),
-            end_timestamp=datetime.now(timezone.utc),
+            start_timestamp=start_time,
+            end_timestamp=end_time,
         )
         db.add(processing_info_db)
         await db.flush()
@@ -137,7 +140,7 @@ class ChatController:
 
         # Create AI response message
         ai_message_db = Message(
-            sender="AI", content="Streamed response", timestamp=datetime.now(timezone.utc)
+            sender="AI", content="", timestamp=datetime.now(timezone.utc)
         )
         db.add(ai_message_db)
         await db.flush()
@@ -151,18 +154,20 @@ class ChatController:
         processing_info_db = ProcessingInfo(
             message_id=ai_message_db.id,
             start_timestamp=datetime.now(timezone.utc),
-            end_timestamp=datetime.now(timezone.utc),
+            end_timestamp=None,
         )
         db.add(processing_info_db)
         await db.flush()
 
-        # Stream tokens
-        for i in range(5):
-            await asyncio.sleep(0.2)
-            yield f"data: token-{i}\n\n"
+        # Stream response using MLX LLM
+        accumulated_content = ""
+        async for token in self.llm.stream_response(messages):
+            accumulated_content = token
+            yield f"data: {token}\n\n"
 
         # Update AI message with final content
-        ai_message_db.content = "Streamed response completed"
+        ai_message_db.content = accumulated_content
+        processing_info_db.end_timestamp = datetime.now(timezone.utc)
         await db.commit()
 
 

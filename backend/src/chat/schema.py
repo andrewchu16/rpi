@@ -21,9 +21,9 @@ class ChatMessage(BaseModel):
 
     @field_validator("content")
     def validate_content_length(cls, v):
-        if len(v) > chat_config.max_message_length:
+        if len(v) > chat_config.max_message_chars:
             raise ValueError(
-                f"Message content cannot exceed {chat_config.max_message_length} characters"
+                f"Message content cannot exceed {chat_config.max_message_chars} characters"
             )
         return v
 
@@ -91,23 +91,3 @@ class ChatInfoOutput(BaseModel):
     average_response_time: float = Field(
         default=0, description="The average response time in seconds"
     )
-
-
-# Database response models
-class MessageCreate(BaseModel):
-    sender: str
-    content: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class CacheInfoCreate(BaseModel):
-    message_id: int
-    hit: bool
-    cache_timestamp: Optional[datetime] = None
-    num_hits: int = 0
-
-
-class ProcessingInfoCreate(BaseModel):
-    message_id: int
-    start_timestamp: Optional[datetime] = None
-    end_timestamp: Optional[datetime] = None

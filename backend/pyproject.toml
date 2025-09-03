@@ -7,8 +7,11 @@ requires-python = ">=3.13"
 dependencies = [
     "asyncpg>=0.30.0",
     "fastapi>=0.116.1",
+    "mlx>=0.29.0",
+    "mlx-lm>=0.27.0",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
 ]
+required-environments = "manylinux_2_24_aarch64"
