@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-from .schema import ChatMessage, ChatResponseInput, ChatResponseOutput, ChatSender
+from .schema import ChatInfoOutput, ChatMessage, ChatResponseInput, ChatResponseOutput, ChatSender
 from .controller import chat_controller
 from src.database import get_db
 from src.models import Message, CacheInfo, ProcessingInfo
@@ -20,11 +20,11 @@ async def get_response(chat: ChatResponseInput, db: AsyncSession = Depends(get_d
 
 
 @router.get("/info")
-async def get_info():
+async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
     """
     Get statistics about messages.
     """
-    return chat_controller.get_info()
+    return chat_controller.get_info(db)
 
 
 @router.post("/stream")

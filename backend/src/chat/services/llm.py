@@ -13,7 +13,7 @@ class LLM:
     
     def __init__(self) -> None:
         """Initialize the MLX-based LLM model and tokenizer."""
-        model_name: str = "unsloth/Llama-3.2-3B-Instruct-bnb-4bit"
+        model_name: str = chat_config.model_name
         
         # Load the model and tokenizer using MLX
         self.model, self.tokenizer = load(model_name)

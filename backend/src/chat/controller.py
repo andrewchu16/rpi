@@ -1,13 +1,14 @@
 import asyncio
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 from .schema import (
     ChatMessage,
     ChatResponseInput,
     ChatResponseOutput,
     ChatResponseCacheInfo,
     ChatResponseProcessingInfo,
+    ChatInfoOutput,
 )
 from .services.llm import LLM
 from src.models import Message, CacheInfo, ProcessingInfo
@@ -15,15 +16,18 @@ from src.models import Message, CacheInfo, ProcessingInfo
 
 class ChatController:
     def __init__(self):
-        """Initialize the chat controller with MLX-based LLM service."""
+        """Initialize the chat controller with transformers-based LLM service."""
         self.llm = LLM()
 
-    def get_info(self):
-        return {
-            "status": "ok",
-            "message": "Message API is running",
-            "timestamp": datetime.now(timezone.utc),
-        }
+    def get_info(self, db: AsyncSession) -> ChatInfoOutput:
+        count = db.execute(select(func.count(Message.id))).scalar()
+        average_response_time = db.execute(select(func.avg(ProcessingInfo.end_timestamp - ProcessingInfo.start_timestamp))).scalar()
+        if average_response_time is None:
+            average_response_time = 0
+        return ChatInfoOutput(
+            messages_received=count,
+            average_response_time=average_response_time,
+        )
 
     async def create_response(
         self, chat: ChatResponseInput, db: AsyncSession
