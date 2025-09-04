@@ -1,21 +1,21 @@
+# Python virtual environments
 .venv/
+env/
+.Python
+
+# Python bytecode and cache
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
+
+# Pip and install logs
 pip-log.txt
 pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
+
+# General logs
+logs/*
+!.gitkeep
+
+# Git version control
 .git/
-.mypy_cache/
-.pytest_cache/
-logs/
