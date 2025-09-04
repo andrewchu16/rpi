@@ -6,8 +6,6 @@ services:
       POSTGRES_DB: chatdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     networks: 
       - db
     security_opt: [ "no-new-privileges:true" ]
@@ -21,6 +19,8 @@ services:
       - db
     security_opt: [ "no-new-privileges:true" ]
     cap_drop: [ "ALL" ]
+    volumes:
+      - ./backend/logs:/app/logs:rw
     environment:
       - DEBUG=false
       - ALLOWED_ORIGINS=["chat.andrewchu.ca"]
