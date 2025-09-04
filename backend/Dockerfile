@@ -27,6 +27,9 @@ RUN useradd -u 10001 -m app
 # Copy logging config
 COPY logging_config.json ./
 
+# Create logs directory and ensure proper permissions
+RUN mkdir -p /app/logs && chown -R app:app /app/logs
+
 # Copy source code
 COPY src/ ./src
 
