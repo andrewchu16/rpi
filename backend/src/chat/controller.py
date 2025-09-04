@@ -17,7 +17,14 @@ from src.models import Message, CacheInfo, ProcessingInfo
 class ChatController:
     def __init__(self):
         """Initialize the chat controller with transformers-based LLM service."""
-        self.llm = LLM()
+        self._llm: LLM | None = None
+
+    @property
+    def llm(self) -> LLM:
+        """Lazy initialization of LLM service."""
+        if self._llm is None:
+            self._llm = LLM()
+        return self._llm
 
     def get_info(self, db: AsyncSession) -> ChatInfoOutput:
         count = db.execute(select(func.count(Message.id))).scalar()

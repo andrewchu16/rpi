@@ -1,30 +1,14 @@
 from contextlib import asynccontextmanager
-import json
 import logging
-import logging.config
-import atexit
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from logging.handlers import QueueHandler
 from .chat import chat_router
 from .config import config
 from .database import init_db, close_db
 
-# Setup logging at module level
-def setup_logging():
-    with open("./logging_config.json", "r") as f:
-        logging.config.dictConfig(json.load(f))
-    queue_handler: QueueHandler = logging.getHandlerByName("queue_handler")
-
-    if queue_handler is not None:
-        queue_handler.listener.start()
-        atexit.register(queue_handler.listener.stop)
-
-
-# Initialize logging
-setup_logging()
 logger = logging.getLogger(__name__)
+logger.info("Main module initialized")
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
@@ -48,6 +32,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 async def root():

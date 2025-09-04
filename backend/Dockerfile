@@ -9,6 +9,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         curl \
+        build-essential \
+        cmake \
+        git \
+        pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pyproject.toml and uv.lock
@@ -25,6 +29,9 @@ COPY logging_config.json ./
 
 # Copy source code
 COPY src/ ./src
+
+# Copy model files
+COPY models/ ./models
 
 # Fix permissions and ownership for the app user
 RUN chown -R app:app /app

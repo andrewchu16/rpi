@@ -8,7 +8,7 @@ class ChatConfig(BaseSettings):
     max_context_length: int = 500  # in tokens
     max_response_tokens: int = 300  # in tokens
     
-    model_name: str = "unsloth/Llama-3.2-1B-Instruct-bnb-4bit"
+    model_name: str = "./models/Llama-3.2-1B-Instruct-IQ4_XS.gguf"
 
 
 chat_config = ChatConfig()
