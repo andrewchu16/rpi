@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: chatdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks: 
       - db
     security_opt: [ "no-new-privileges:true" ]
