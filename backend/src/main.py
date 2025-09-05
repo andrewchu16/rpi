@@ -3,12 +3,11 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from .chat import chat_router
 from .config import config
 from .database import init_db, close_db
 
 logger = logging.getLogger(__name__)
-logger.info("Main module initialized")
+
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
@@ -38,5 +37,7 @@ app.add_middleware(
 async def root():
     return {"message": "welcome to the andrew chu api", "server_time": datetime.now()}
 
+
+from .chat import chat_router
 
 app.include_router(chat_router)

@@ -6,7 +6,7 @@ from src.chat.config import chat_config
 from src.chat.schema import ChatMessage
 
 logger = logging.getLogger(__name__)
-
+print(logger)
 
 class LLM:
     """LLaMA.cpp-based LLM service for chat generation using GGUF models."""

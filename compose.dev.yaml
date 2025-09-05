@@ -23,6 +23,7 @@ services:
     cap_drop: [ "ALL" ]
     volumes:
       - ./backend/logs:/app/logs:rw
+      - ./backend/models:/app/models:ro
     environment:
       - DEBUG=true
       - ALLOWED_ORIGINS=["*"]

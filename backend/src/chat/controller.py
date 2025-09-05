@@ -26,9 +26,9 @@ class ChatController:
             self._llm = LLM()
         return self._llm
 
-    def get_info(self, db: AsyncSession) -> ChatInfoOutput:
-        count = db.execute(select(func.count(Message.id))).scalar()
-        average_response_time = db.execute(select(func.avg(ProcessingInfo.end_timestamp - ProcessingInfo.start_timestamp))).scalar()
+    async def get_info(self, db: AsyncSession) -> ChatInfoOutput:
+        count = (await db.execute(select(func.count(Message.id)))).scalar()
+        average_response_time = (await db.execute(select(func.avg(ProcessingInfo.end_timestamp - ProcessingInfo.start_timestamp)))).scalar()
         if average_response_time is None:
             average_response_time = 0
         return ChatInfoOutput(
