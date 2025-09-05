@@ -6,7 +6,7 @@ from src.chat.config import chat_config
 from src.chat.schema import ChatMessage
 
 logger = logging.getLogger(__name__)
-print(logger)
+
 
 class LLM:
     """LLaMA.cpp-based LLM service for chat generation using GGUF models."""
@@ -49,7 +49,6 @@ class LLM:
 
         # Use the model's built-in chat template
         try:
-            # LLaMA.cpp handles chat formatting automatically
             return messages
         except Exception as e:
             logger.warning(f"Error formatting conversation: {e}")

@@ -1,5 +1,4 @@
-import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 from .schema import (
@@ -9,9 +8,11 @@ from .schema import (
     ChatResponseCacheInfo,
     ChatResponseProcessingInfo,
     ChatInfoOutput,
+    ChatMessageSender,
+    Chat,
 )
 from .services.llm import LLM
-from src.models import Message, CacheInfo, ProcessingInfo
+from .models import Message, CacheInfo, ProcessingInfo, Chat as ChatModel
 
 
 class ChatController:
@@ -26,49 +27,90 @@ class ChatController:
             self._llm = LLM()
         return self._llm
 
+    async def create_chat(self, db: AsyncSession) -> Chat:
+        """Create a new chat and return its information."""
+        chat_db = ChatModel()
+        db.add(chat_db)
+        await db.flush()  # Get the ID without committing
+        await db.commit()
+
+        return Chat(
+            id=chat_db.id,
+            created_at=chat_db.created_at,
+        )
+
     async def get_info(self, db: AsyncSession) -> ChatInfoOutput:
-        count = (await db.execute(select(func.count(Message.id)))).scalar()
-        average_response_time = (await db.execute(select(func.avg(ProcessingInfo.end_timestamp - ProcessingInfo.start_timestamp)))).scalar()
+        chats_count = (await db.execute(select(func.count(ChatModel.id)))).scalar()
+        messages_count = (
+            await db.execute(
+                select(func.count(Message.id)).where(
+                    Message.sender == ChatMessageSender.USER.value
+                )
+            )
+        ).scalar()
+        average_response_time: timedelta | None = (
+            await db.execute(
+                select(
+                    func.avg(
+                        ProcessingInfo.end_timestamp - ProcessingInfo.start_timestamp
+                    )
+                )
+            )
+        ).scalar()
         if average_response_time is None:
-            average_response_time = 0
+            average_response_time = timedelta(0)
         return ChatInfoOutput(
-            messages_received=count,
-            average_response_time=average_response_time,
+            chats_created=chats_count,
+            messages_received=messages_count,
+            average_response_time=average_response_time.total_seconds(),
         )
 
     async def create_response(
         self, chat: ChatResponseInput, db: AsyncSession
     ) -> ChatResponseOutput:
-        # Get the last user message
-        if not chat.messages:
-            raise ValueError("No messages provided")
-
-        last_user_message = chat.messages[-1]
-        
-        # Ensure timestamp is timezone-aware
-        timestamp = last_user_message.timestamp
-        if timestamp and timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-        elif not timestamp:
-            timestamp = datetime.now(timezone.utc)
+        # Create user message from content
+        timestamp = datetime.now(timezone.utc)
 
         # Save the user message to database
         user_message_db = Message(
-            sender=last_user_message.sender.value,
-            content=last_user_message.content,
+            chat_id=chat.chat_id,
+            sender=ChatMessageSender.USER.value,
+            content=chat.message_content,
             timestamp=timestamp,
         )
         db.add(user_message_db)
         await db.flush()  # Get the ID without committing
 
+        # Get all messages in the chat for context
+        result = await db.execute(
+            select(Message)
+            .where(Message.chat_id == chat.chat_id)
+            .order_by(Message.timestamp.asc())
+        )
+        chat_messages = result.scalars().all()
+
+        # Convert to ChatMessage objects for LLM
+        messages_for_llm = [
+            ChatMessage(
+                id=msg.id,
+                sender=ChatMessageSender(msg.sender),
+                content=msg.content,
+                timestamp=msg.timestamp,
+            )
+            for msg in chat_messages
+        ]
+
         # Generate AI response using MLX LLM
         start_time = datetime.now(timezone.utc)
-        ai_response_content = await self.llm.generate_response(chat.messages)
+        ai_response_content = await self.llm.generate_response(messages_for_llm)
         end_time = datetime.now(timezone.utc)
 
         # Create AI response message
         ai_message_db = Message(
-            sender="AI", content=ai_response_content, timestamp=end_time
+            chat_id=chat.chat_id,
+            sender=ChatMessageSender.AI.value,
+            content=ai_response_content,
+            timestamp=end_time,
         )
         db.add(ai_message_db)
         await db.flush()  # Get the ID without committing
@@ -123,35 +165,50 @@ class ChatController:
             processing_info=processing_info,
         )
 
-    async def response_stream(self, messages: list[ChatMessage], db: AsyncSession):
+    async def response_stream(
+        self, chat_id: int, message_content: str, db: AsyncSession
+    ):
         """
-        Stream a response to the messages and save to database.
+        Stream a response to the message and save to database.
         """
-        if not messages:
-            return
-
-        # Get the last user message
-        last_user_message = messages[-1]
-        
-        # Ensure timestamp is timezone-aware
-        timestamp = last_user_message.timestamp
-        if timestamp and timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-        elif not timestamp:
-            timestamp = datetime.now(timezone.utc)
+        # Create timestamp for the message
+        timestamp = datetime.now(timezone.utc)
 
         # Save the user message to database
         user_message_db = Message(
-            sender=last_user_message.sender.value,
-            content=last_user_message.content,
+            chat_id=chat_id,
+            sender=ChatMessageSender.USER.value,
+            content=message_content,
             timestamp=timestamp,
         )
         db.add(user_message_db)
         await db.flush()
 
+        # Get all messages in the chat for context
+        result = await db.execute(
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.timestamp.asc())
+        )
+        chat_messages = result.scalars().all()
+
+        # Convert to ChatMessage objects for LLM
+        messages_for_llm = [
+            ChatMessage(
+                id=msg.id,
+                sender=ChatMessageSender(msg.sender),
+                content=msg.content,
+                timestamp=msg.timestamp,
+            )
+            for msg in chat_messages
+        ]
+
         # Create AI response message
         ai_message_db = Message(
-            sender="AI", content="", timestamp=datetime.now(timezone.utc)
+            chat_id=chat_id,
+            sender=ChatMessageSender.AI.value,
+            content="",
+            timestamp=datetime.now(timezone.utc),
         )
         db.add(ai_message_db)
         await db.flush()
@@ -172,7 +229,7 @@ class ChatController:
 
         # Stream response using MLX LLM
         accumulated_content = ""
-        async for token in self.llm.stream_response(messages):
+        async for token in self.llm.stream_response(messages_for_llm):
             accumulated_content = token
             yield f"data: {token}\n\n"
 

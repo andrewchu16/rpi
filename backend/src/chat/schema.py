@@ -6,18 +6,29 @@ from enum import StrEnum
 from .config import chat_config
 
 
-class ChatSender(StrEnum):
+class ChatMessageSender(StrEnum):
     USER = "user"
     AI = "AI"
 
 
+class Chat(BaseModel):
+    id: Optional[int] = Field(default=None, description="Database ID of the chat")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the chat was created",
+    )
+
+
 class ChatMessage(BaseModel):
     id: Optional[int] = Field(default=None, description="Database ID of the message")
-    sender: ChatSender = Field(
-        default=ChatSender.USER, description="The sender of the message"
+    sender: ChatMessageSender = Field(
+        default=ChatMessageSender.USER, description="The sender of the message"
     )
     content: str = Field(default="", description="The content of the message")
-    timestamp: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of the message")
+    timestamp: Optional[datetime] = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp of the message",
+    )
 
     @field_validator("content")
     def validate_content_length(cls, v):
@@ -30,7 +41,9 @@ class ChatMessage(BaseModel):
 
 class ChatResponseCacheInfo(BaseModel):
     id: Optional[int] = Field(default=None, description="Database ID of the cache info")
-    message_id: Optional[int] = Field(default=None, description="ID of the related message")
+    message_id: Optional[int] = Field(
+        default=None, description="ID of the related message"
+    )
     hit: bool = Field(
         default=False, description="Whether the message was found in cache"
     )
@@ -44,8 +57,12 @@ class ChatResponseCacheInfo(BaseModel):
 
 
 class ChatResponseProcessingInfo(BaseModel):
-    id: Optional[int] = Field(default=None, description="Database ID of the processing info")
-    message_id: Optional[int] = Field(default=None, description="ID of the related message")
+    id: Optional[int] = Field(
+        default=None, description="Database ID of the processing info"
+    )
+    message_id: Optional[int] = Field(
+        default=None, description="ID of the related message"
+    )
     start_timestamp: Optional[datetime] = Field(
         default=None,
         description="The timestamp when the message was started processing",
@@ -57,21 +74,16 @@ class ChatResponseProcessingInfo(BaseModel):
 
 
 class ChatResponseInput(BaseModel):
-    messages: list[ChatMessage] = Field(..., description="List of chat messages")
+    chat_id: int = Field(..., description="ID of the chat")
+    message_content: str = Field(
+        ..., description="The content of the new message to add to the chat"
+    )
     get_cache_info: bool = Field(
         default=False, description="Whether to get the cache information"
     )
     get_processing_info: bool = Field(
         default=False, description="Whether to get the processing information"
     )
-
-    @field_validator("messages")
-    def validate_messages_count(cls, v):
-        if len(v) > chat_config.max_messages:
-            raise ValueError(
-                f"Cannot send more than {chat_config.max_messages} messages at once"
-            )
-        return v
 
 
 class ChatResponseOutput(BaseModel):
@@ -85,6 +97,7 @@ class ChatResponseOutput(BaseModel):
 
 
 class ChatInfoOutput(BaseModel):
+    chats_created: int = Field(default=0, description="The number of chats created")
     messages_received: int = Field(
         default=0, description="The number of messages received"
     )

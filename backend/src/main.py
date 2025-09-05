@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 from .config import config
 from .database import init_db, close_db
+from .chat import chat_router
+
+# Import models to ensure they are registered with Base.metadata
+from .chat.models import Message, CacheInfo, ProcessingInfo
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,5 @@ async def root():
     return {"message": "welcome to the andrew chu api", "server_time": datetime.now()}
 
 
-from .chat import chat_router
 
 app.include_router(chat_router)

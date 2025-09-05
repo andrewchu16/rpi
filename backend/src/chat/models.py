@@ -1,18 +1,30 @@
 from datetime import datetime, timezone
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
-from .database import Base
+from ..database import Base
+
+
+class Chat(Base):
+    __tablename__ = "chats"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    # Relationships
+    messages = relationship("Message", back_populates="chat")
 
 
 class Message(Base):
     __tablename__ = "messages"
     
     id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, ForeignKey("chats.id"), nullable=False)
     sender = Column(String(10), nullable=False)  # "user" or "AI"
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
+    chat = relationship("Chat", back_populates="messages")
     cache_info = relationship("CacheInfo", back_populates="message", uselist=False)
     processing_info = relationship("ProcessingInfo", back_populates="message", uselist=False)
 

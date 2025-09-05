@@ -3,12 +3,20 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
-from .schema import ChatInfoOutput, ChatMessage, ChatResponseInput, ChatResponseOutput, ChatSender
+from .schema import ChatInfoOutput, ChatMessage, ChatResponseInput, ChatResponseOutput, ChatMessageSender, Chat
 from .controller import chat_controller
 from src.database import get_db
-from src.models import Message, CacheInfo, ProcessingInfo
+from .models import Message, CacheInfo, ProcessingInfo
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+
+
+@router.post("/create", response_model=Chat)
+async def create_chat(db: AsyncSession = Depends(get_db)):
+    """
+    Create a new chat and return its ID.
+    """
+    return await chat_controller.create_chat(db)
 
 
 @router.post("/response", response_model=ChatResponseOutput)
@@ -24,21 +32,21 @@ async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
     """
     Get statistics about messages.
     """
-    return chat_controller.get_info(db)
+    return await chat_controller.get_info(db)
 
 
 @router.post("/stream")
 async def stream_response(
-    messages: list[ChatMessage], db: AsyncSession = Depends(get_db)
+    chat_id: int, message_content: str, db: AsyncSession = Depends(get_db)
 ):
     """
-    Stream a response to the messages. Only streams the response string.
+    Stream a response to the message. Only streams the response string.
     """
 
     async def sse_stream():
         yield "event: start\n"
         yield "data: streaming\n\n"
-        async for token in chat_controller.response_stream(messages, db):
+        async for token in chat_controller.response_stream(chat_id, message_content, db):
             yield token
         yield "event: done\n"
         yield "data: [END]\n\n"
@@ -65,7 +73,7 @@ async def get_messages(
     return [
         ChatMessage(
             id=msg.id,
-            sender=ChatSender(msg.sender),
+            sender=ChatMessageSender(msg.sender),
             content=msg.content,
             timestamp=msg.timestamp,
         )
