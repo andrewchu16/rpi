@@ -21,6 +21,7 @@ services:
     cap_drop: [ "ALL" ]
     volumes:
       - ./backend/logs:/app/logs:rw
+      - ./backend/models:/app/models:ro
     environment:
       - DEBUG=false
       - ALLOWED_ORIGINS=["chat.andrewchu.ca"]
@@ -32,7 +33,7 @@ services:
         required: false
 
   nginx:
-    image: nginx:1.29.0
+    image: nginx:1.29.0-alpine
     restart: unless-stopped
     ports:
       - "80:80"
