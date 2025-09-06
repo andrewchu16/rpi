@@ -22,6 +22,7 @@ async_session = async_sessionmaker(
 # Base class for models
 Base = declarative_base()
 
+
 # Database dependency
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
@@ -36,9 +37,13 @@ async def init_db():
     async with engine.begin() as conn:
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
-        
+
         # Verify tables exist
-        result = await conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
+        result = await conn.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+            )
+        )
         tables = [row[0] for row in result.fetchall()]
         print(f"Database initialized with tables: {tables}")
 

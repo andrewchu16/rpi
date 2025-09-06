@@ -42,5 +42,4 @@ async def root():
     return {"message": "welcome to the andrew chu api", "server_time": datetime.now()}
 
 
-
 app.include_router(chat_router)

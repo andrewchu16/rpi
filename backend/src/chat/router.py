@@ -50,9 +50,9 @@ async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
 
 @router.post("/stream")
 async def stream_response(
-    chat_id: UUID = Depends(validate_chat_exists), 
-    message_content: str = ..., 
-    db: AsyncSession = Depends(get_db)
+    chat_id: UUID = Depends(validate_chat_exists),
+    message_content: str = ...,
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Stream a response to the message. Only streams the response string.
@@ -87,7 +87,9 @@ async def get_messages(
     Otherwise, return all messages.
     """
     if limit > 1000:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Limit cannot exceed 1000")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Limit cannot exceed 1000"
+        )
 
     # Validate chat exists if chat_id is provided
     if chat_id is not None:
@@ -117,8 +119,8 @@ async def get_messages(
 
 @router.get("/messages/{message_id}/cache", response_model=ChatResponseCacheInfo)
 async def get_message_cache_info(
-    message_id: UUID = Depends(validate_message_exists), 
-    db: AsyncSession = Depends(get_db)
+    message_id: UUID = Depends(validate_message_exists),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get cache information for a specific message.
@@ -133,8 +135,8 @@ async def get_message_cache_info(
     "/messages/{message_id}/processing", response_model=ChatResponseProcessingInfo
 )
 async def get_message_processing_info(
-    message_id: UUID = Depends(validate_message_exists), 
-    db: AsyncSession = Depends(get_db)
+    message_id: UUID = Depends(validate_message_exists),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get processing information for a specific message.

@@ -245,7 +245,7 @@ class ChatController:
             accumulated_content += token
             # Escape newlines for proper SSE transmission - replace \n with \\n
             # This preserves newlines in the content while maintaining SSE format
-            escaped_token = token.replace('\n', '\\n')
+            escaped_token = token.replace("\n", "\\n")
             yield f"data: {escaped_token}\n\n"
 
         # Update AI message with final content
@@ -253,16 +253,18 @@ class ChatController:
         processing_info_db.end_timestamp = datetime.now(timezone.utc)
         await db.commit()
 
-    async def get_message_cache_info(self, message_id: UUID, db: AsyncSession) -> ChatResponseCacheInfo:
+    async def get_message_cache_info(
+        self, message_id: UUID, db: AsyncSession
+    ) -> ChatResponseCacheInfo:
         """Get cache information for a specific message."""
         result = await db.execute(
             select(CacheInfo).where(CacheInfo.message_id == message_id)
         )
         cache_info = result.scalar_one_or_none()
-        
+
         if not cache_info:
             raise ValueError("Cache info not found")
-        
+
         return ChatResponseCacheInfo(
             id=cache_info.id,
             message_id=cache_info.message_id,
@@ -271,16 +273,18 @@ class ChatController:
             num_hits=cache_info.num_hits,
         )
 
-    async def get_message_processing_info(self, message_id: UUID, db: AsyncSession) -> ChatResponseProcessingInfo:
+    async def get_message_processing_info(
+        self, message_id: UUID, db: AsyncSession
+    ) -> ChatResponseProcessingInfo:
         """Get processing information for a specific message."""
         result = await db.execute(
             select(ProcessingInfo).where(ProcessingInfo.message_id == message_id)
         )
         processing_info = result.scalar_one_or_none()
-        
+
         if not processing_info:
             raise ValueError("Processing info not found")
-        
+
         return ChatResponseProcessingInfo(
             id=processing_info.id,
             message_id=processing_info.message_id,

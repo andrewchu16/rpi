@@ -8,11 +8,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        curl \
-        build-essential \
-        cmake \
-        git \
-        pkg-config \
+    curl \
+    build-essential \
+    cmake \
+    git \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pyproject.toml and uv.lock

@@ -20,7 +20,9 @@ class Chat(BaseModel):
 
 class ChatMessage(BaseModel):
     id: Optional[UUID] = Field(default=None, description="Database ID of the message")
-    chat_id: Optional[UUID] = Field(default=None, description="ID of the chat this message belongs to")
+    chat_id: Optional[UUID] = Field(
+        default=None, description="ID of the chat this message belongs to"
+    )
     sender: ChatMessageSender = Field(
         default=ChatMessageSender.USER, description="The sender of the message"
     )
@@ -32,7 +34,9 @@ class ChatMessage(BaseModel):
 
 
 class ChatResponseCacheInfo(BaseModel):
-    id: Optional[UUID] = Field(default=None, description="Database ID of the cache info")
+    id: Optional[UUID] = Field(
+        default=None, description="Database ID of the cache info"
+    )
     message_id: Optional[UUID] = Field(
         default=None, description="ID of the related message"
     )
