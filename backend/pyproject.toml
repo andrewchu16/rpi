@@ -12,5 +12,7 @@ dependencies = [
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
     "llama-cpp-python>=0.2.0",
+    "hnswlib>=0.8.0",
+    "sentence-transformers>=5.1.0",
 ]
 required-environments = "manylinux_2_24_aarch64"

@@ -227,10 +227,10 @@ class ChatController:
         db.add(processing_info_db)
         await db.flush()
 
-        # Stream response using MLX LLM
+        # Stream response using LLaMA.cpp LLM
         accumulated_content = ""
         async for token in self.llm.stream_response(messages_for_llm):
-            accumulated_content = token
+            accumulated_content += token
             yield f"data: {token}\n\n"
 
         # Update AI message with final content

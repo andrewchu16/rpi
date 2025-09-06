@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import AsyncGenerator, List, Dict, Any, Optional
+from typing import AsyncGenerator, List, Dict
 from llama_cpp import Llama
 from src.chat.config import chat_config
 from src.chat.schema import ChatMessage
@@ -13,7 +13,7 @@ class LLM:
 
     def __init__(self) -> None:
         """Initialize the LLaMA.cpp-based LLM model."""
-        model_path: str = chat_config.model_name
+        model_path: str = chat_config.llm_model_name
 
         # Load the model using llama-cpp-python
         logger.info(f"Loading GGUF model from {model_path}...")
@@ -119,7 +119,7 @@ class LLM:
             conversation_history: List of chat messages
 
         Yields:
-            Accumulated response text as it's generated
+            Individual tokens as they are generated
         """
         # Format the conversation
         messages = self._format_conversation(conversation_history)
@@ -136,16 +136,13 @@ class LLM:
                 stream=True,
             )
 
-            accumulated_text: str = ""
-
             # Stream the response
             for chunk in stream:
                 if "choices" in chunk and len(chunk["choices"]) > 0:
                     delta = chunk["choices"][0].get("delta", {})
                     if "content" in delta:
                         content = delta["content"]
-                        accumulated_text += content
-                        yield accumulated_text
+                        yield content
 
                         # Small delay to simulate streaming
                         await asyncio.sleep(0.05)
