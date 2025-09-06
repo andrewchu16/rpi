@@ -30,14 +30,6 @@ class ChatMessage(BaseModel):
         description="Timestamp of the message",
     )
 
-    @field_validator("content")
-    def validate_content_length(cls, v):
-        if len(v) > chat_config.max_message_chars:
-            raise ValueError(
-                f"Message content cannot exceed {chat_config.max_message_chars} characters"
-            )
-        return v
-
 
 class ChatResponseCacheInfo(BaseModel):
     id: Optional[int] = Field(default=None, description="Database ID of the cache info")

@@ -13,6 +13,7 @@ from .schema import (
 )
 from .services.llm import LLM
 from .models import Message, CacheInfo, ProcessingInfo, Chat as ChatModel
+from .utils import shorten_chat_messages
 
 
 class ChatController:
@@ -100,7 +101,10 @@ class ChatController:
             for msg in chat_messages
         ]
 
-        # Generate AI response using MLX LLM
+        # Shorten messages to comply with chat config restrictions
+        messages_for_llm = shorten_chat_messages(messages_for_llm)
+
+        # Generate AI response using LLaMA.cpp LLM
         start_time = datetime.now(timezone.utc)
         ai_response_content = await self.llm.generate_response(messages_for_llm)
         end_time = datetime.now(timezone.utc)
@@ -118,7 +122,7 @@ class ChatController:
         # Create response message with database ID
         response_message = ChatMessage(
             id=ai_message_db.id,
-            sender="AI",
+            sender=ChatMessageSender.AI.value,
             content=ai_response_content,
             timestamp=ai_message_db.timestamp,
         )
@@ -202,6 +206,9 @@ class ChatController:
             )
             for msg in chat_messages
         ]
+
+        # Shorten messages to comply with chat config restrictions
+        messages_for_llm = shorten_chat_messages(messages_for_llm)
 
         # Create AI response message
         ai_message_db = Message(
