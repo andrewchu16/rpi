@@ -1,6 +1,9 @@
 from datetime import datetime, timezone, timedelta
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
+
+from .config import chat_config
 from .schema import (
     ChatMessage,
     ChatResponseInput,
@@ -87,6 +90,7 @@ class ChatController:
             select(Message)
             .where(Message.chat_id == chat.chat_id)
             .order_by(Message.timestamp.asc())
+            .limit(chat_config.max_messages)
         )
         chat_messages = result.scalars().all()
 
@@ -104,7 +108,7 @@ class ChatController:
         # Shorten messages to comply with chat config restrictions
         messages_for_llm = shorten_chat_messages(messages_for_llm)
 
-        # Generate AI response using LLaMA.cpp LLM
+        # Generate AI response
         start_time = datetime.now(timezone.utc)
         ai_response_content = await self.llm.generate_response(messages_for_llm)
         end_time = datetime.now(timezone.utc)
@@ -170,7 +174,7 @@ class ChatController:
         )
 
     async def response_stream(
-        self, chat_id: int, message_content: str, db: AsyncSession
+        self, chat_id: UUID, message_content: str, db: AsyncSession
     ):
         """
         Stream a response to the message and save to database.
@@ -247,6 +251,41 @@ class ChatController:
         ai_message_db.content = accumulated_content
         processing_info_db.end_timestamp = datetime.now(timezone.utc)
         await db.commit()
+
+    async def get_message_cache_info(self, message_id: UUID, db: AsyncSession) -> ChatResponseCacheInfo:
+        """Get cache information for a specific message."""
+        result = await db.execute(
+            select(CacheInfo).where(CacheInfo.message_id == message_id)
+        )
+        cache_info = result.scalar_one_or_none()
+        
+        if not cache_info:
+            raise ValueError("Cache info not found")
+        
+        return ChatResponseCacheInfo(
+            id=cache_info.id,
+            message_id=cache_info.message_id,
+            hit=cache_info.hit,
+            cache_timestamp=cache_info.cache_timestamp,
+            num_hits=cache_info.num_hits,
+        )
+
+    async def get_message_processing_info(self, message_id: UUID, db: AsyncSession) -> ChatResponseProcessingInfo:
+        """Get processing information for a specific message."""
+        result = await db.execute(
+            select(ProcessingInfo).where(ProcessingInfo.message_id == message_id)
+        )
+        processing_info = result.scalar_one_or_none()
+        
+        if not processing_info:
+            raise ValueError("Processing info not found")
+        
+        return ChatResponseProcessingInfo(
+            id=processing_info.id,
+            message_id=processing_info.message_id,
+            start_timestamp=processing_info.start_timestamp,
+            end_timestamp=processing_info.end_timestamp,
+        )
 
 
 chat_controller = ChatController()

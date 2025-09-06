@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator
+from uuid import UUID
+from pydantic import BaseModel, Field
 from enum import StrEnum
-
-from .config import chat_config
 
 
 class ChatMessageSender(StrEnum):
@@ -12,7 +11,7 @@ class ChatMessageSender(StrEnum):
 
 
 class Chat(BaseModel):
-    id: Optional[int] = Field(default=None, description="Database ID of the chat")
+    id: Optional[UUID] = Field(default=None, description="Database ID of the chat")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the chat was created",
@@ -20,8 +19,8 @@ class Chat(BaseModel):
 
 
 class ChatMessage(BaseModel):
-    id: Optional[int] = Field(default=None, description="Database ID of the message")
-    chat_id: Optional[int] = Field(default=None, description="ID of the chat this message belongs to")
+    id: Optional[UUID] = Field(default=None, description="Database ID of the message")
+    chat_id: Optional[UUID] = Field(default=None, description="ID of the chat this message belongs to")
     sender: ChatMessageSender = Field(
         default=ChatMessageSender.USER, description="The sender of the message"
     )
@@ -33,8 +32,8 @@ class ChatMessage(BaseModel):
 
 
 class ChatResponseCacheInfo(BaseModel):
-    id: Optional[int] = Field(default=None, description="Database ID of the cache info")
-    message_id: Optional[int] = Field(
+    id: Optional[UUID] = Field(default=None, description="Database ID of the cache info")
+    message_id: Optional[UUID] = Field(
         default=None, description="ID of the related message"
     )
     hit: bool = Field(
@@ -50,10 +49,10 @@ class ChatResponseCacheInfo(BaseModel):
 
 
 class ChatResponseProcessingInfo(BaseModel):
-    id: Optional[int] = Field(
+    id: Optional[UUID] = Field(
         default=None, description="Database ID of the processing info"
     )
-    message_id: Optional[int] = Field(
+    message_id: Optional[UUID] = Field(
         default=None, description="ID of the related message"
     )
     start_timestamp: Optional[datetime] = Field(
@@ -67,7 +66,7 @@ class ChatResponseProcessingInfo(BaseModel):
 
 
 class ChatResponseInput(BaseModel):
-    chat_id: int = Field(..., description="ID of the chat")
+    chat_id: UUID = Field(..., description="ID of the chat")
     message_content: str = Field(
         ..., description="The content of the new message to add to the chat"
     )

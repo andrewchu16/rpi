@@ -3,10 +3,18 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
-from .schema import ChatInfoOutput, ChatMessage, ChatResponseInput, ChatResponseOutput, ChatMessageSender, Chat
+from uuid import UUID
+from .schema import (
+    ChatInfoOutput,
+    ChatMessage,
+    ChatResponseInput,
+    ChatResponseOutput,
+    ChatMessageSender,
+    Chat,
+)
 from .controller import chat_controller
 from src.database import get_db
-from .models import Message, CacheInfo, ProcessingInfo
+from .models import Message
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -37,7 +45,7 @@ async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
 
 @router.post("/stream")
 async def stream_response(
-    chat_id: int, message_content: str, db: AsyncSession = Depends(get_db)
+    chat_id: UUID, message_content: str, db: AsyncSession = Depends(get_db)
 ):
     """
     Stream a response to the message. Only streams the response string.
@@ -46,21 +54,25 @@ async def stream_response(
     async def sse_stream():
         yield "event: start\n"
         yield "data: streaming\n\n"
-        async for token in chat_controller.response_stream(chat_id, message_content, db):
+        async for token in chat_controller.response_stream(
+            chat_id, message_content, db
+        ):
             yield token
         yield "event: done\n"
         yield "data: [END]\n\n"
 
     headers = {"X-Accel-Buffering": "no"}
-    return StreamingResponse(sse_stream(), media_type="text/event-stream", headers=headers)
+    return StreamingResponse(
+        sse_stream(), media_type="text/event-stream", headers=headers
+    )
 
 
 @router.get("/messages", response_model=List[ChatMessage])
 async def get_messages(
-    chat_id: Optional[int] = None,
+    chat_id: Optional[UUID] = None,
     limit: int = 100,
     offset: int = 0,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get stored messages from the database.
@@ -70,8 +82,10 @@ async def get_messages(
     if limit > 1000:
         raise HTTPException(status_code=400, detail="Limit cannot exceed 1000")
 
-    query = select(Message).order_by(Message.timestamp.desc()).limit(limit).offset(offset)
-    
+    query = (
+        select(Message).order_by(Message.timestamp.desc()).limit(limit).offset(offset)
+    )
+
     if chat_id is not None:
         query = query.where(Message.chat_id == chat_id)
 
@@ -91,45 +105,24 @@ async def get_messages(
 
 
 @router.get("/messages/{message_id}/cache")
-async def get_message_cache_info(message_id: int, db: AsyncSession = Depends(get_db)):
+async def get_message_cache_info(message_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Get cache information for a specific message.
     """
-    result = await db.execute(
-        select(CacheInfo).where(CacheInfo.message_id == message_id)
-    )
-    cache_info = result.scalar_one_or_none()
-
-    if not cache_info:
-        raise HTTPException(status_code=404, detail="Cache info not found")
-
-    return {
-        "id": cache_info.id,
-        "message_id": cache_info.message_id,
-        "hit": cache_info.hit,
-        "cache_timestamp": cache_info.cache_timestamp,
-        "num_hits": cache_info.num_hits,
-    }
+    try:
+        return await chat_controller.get_message_cache_info(message_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/messages/{message_id}/processing")
 async def get_message_processing_info(
-    message_id: int, db: AsyncSession = Depends(get_db)
+    message_id: UUID, db: AsyncSession = Depends(get_db)
 ):
     """
     Get processing information for a specific message.
     """
-    result = await db.execute(
-        select(ProcessingInfo).where(ProcessingInfo.message_id == message_id)
-    )
-    processing_info = result.scalar_one_or_none()
-
-    if not processing_info:
-        raise HTTPException(status_code=404, detail="Processing info not found")
-
-    return {
-        "id": processing_info.id,
-        "message_id": processing_info.message_id,
-        "start_timestamp": processing_info.start_timestamp,
-        "end_timestamp": processing_info.end_timestamp,
-    }
+    try:
+        return await chat_controller.get_message_processing_info(message_id, db)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
