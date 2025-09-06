@@ -22,6 +22,7 @@ services:
     volumes:
       - ./backend/logs:/app/logs:rw
       - ./backend/models:/app/models:ro
+      - vector_store:/app/stores
     environment:
       - DEBUG=false
       - ALLOWED_ORIGINS=["chat.andrewchu.ca"]
@@ -74,4 +75,4 @@ networks:
 volumes:
   nginx-cache:
   postgres_data:
-
+  vector_store:

@@ -24,6 +24,7 @@ services:
     volumes:
       - ./backend/logs:/app/logs:rw
       - ./backend/models:/app/models:ro
+      - vector_store:/app/stores
     environment:
       - DEBUG=true
       - ALLOWED_ORIGINS=["*"]
@@ -50,4 +51,4 @@ networks:
 
 volumes:
   postgres_data:
-
+  vector_store:

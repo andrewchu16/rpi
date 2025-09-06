@@ -24,17 +24,14 @@ RUN uv sync --frozen
 # Create non-root user
 RUN useradd -u 10001 -m app
 
+# Create stores directory
+RUN mkdir -p /app/stores
+
 # Copy logging config
 COPY logging_config.json ./
 
-# Copy model files
-COPY models/ ./models
-
 # Copy source code
 COPY src/ ./src
-
-# Copy logs
-COPY logs/ ./logs
 
 # Fix permissions and ownership for the app user
 RUN chown -R app:app /app
