@@ -238,7 +238,10 @@ class ChatController:
         accumulated_content = ""
         async for token in self.llm.stream_response(messages_for_llm):
             accumulated_content += token
-            yield f"data: {token}\n\n"
+            # Escape newlines for proper SSE transmission - replace \n with \\n
+            # This preserves newlines in the content while maintaining SSE format
+            escaped_token = token.replace('\n', '\\n')
+            yield f"data: {escaped_token}\n\n"
 
         # Update AI message with final content
         ai_message_db.content = accumulated_content
