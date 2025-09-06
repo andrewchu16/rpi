@@ -60,6 +60,7 @@ class ProcessingInfo(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     message_id = Column(UUID(as_uuid=True), ForeignKey("messages.id"), nullable=False)
     start_timestamp = Column(DateTime(timezone=True), nullable=True)
+    first_token_timestamp = Column(DateTime(timezone=True), nullable=True)
     end_timestamp = Column(DateTime(timezone=True), nullable=True)
 
     # Relationship

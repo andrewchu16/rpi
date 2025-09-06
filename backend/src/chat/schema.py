@@ -63,33 +63,16 @@ class ChatResponseProcessingInfo(BaseModel):
         default=None,
         description="The timestamp when the message was started processing",
     )
+    first_token_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="The timestamp when the first token was sent to the client",
+    )
     end_timestamp: Optional[datetime] = Field(
         default=None,
         description="The timestamp when the message was finished processing",
     )
 
 
-class ChatResponseInput(BaseModel):
-    chat_id: UUID = Field(..., description="ID of the chat")
-    message_content: str = Field(
-        ..., description="The content of the new message to add to the chat"
-    )
-    get_cache_info: bool = Field(
-        default=False, description="Whether to get the cache information"
-    )
-    get_processing_info: bool = Field(
-        default=False, description="Whether to get the processing information"
-    )
-
-
-class ChatResponseOutput(BaseModel):
-    message: ChatMessage = Field(..., description="The message response")
-    cache_info: Optional[ChatResponseCacheInfo] = Field(
-        default=None, description="The cache information"
-    )
-    processing_info: Optional[ChatResponseProcessingInfo] = Field(
-        default=None, description="The processing information"
-    )
 
 
 class ChatInfoOutput(BaseModel):
@@ -99,4 +82,7 @@ class ChatInfoOutput(BaseModel):
     )
     average_response_time: float = Field(
         default=0, description="The average response time in seconds"
+    )
+    average_first_token_time: float = Field(
+        default=0, description="The average time to first token in seconds"
     )

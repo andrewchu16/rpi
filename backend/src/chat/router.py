@@ -8,8 +8,6 @@ from .schema import (
     ChatInfoOutput,
     ChatMessage,
     ChatResponseCacheInfo,
-    ChatResponseInput,
-    ChatResponseOutput,
     ChatMessageSender,
     Chat,
     ChatResponseProcessingInfo,
@@ -30,14 +28,6 @@ async def create_chat(db: AsyncSession = Depends(get_db)):
     return await chat_controller.create_chat(db)
 
 
-@router.post("/response", response_model=ChatResponseOutput)
-async def get_response(chat: ChatResponseInput, db: AsyncSession = Depends(get_db)):
-    """
-    Get a response to the chat.
-    """
-    # Validate chat exists before processing
-    await validate_chat_exists(chat.chat_id, db)
-    return await chat_controller.create_response(chat, db)
 
 
 @router.get("/info", response_model=ChatInfoOutput)

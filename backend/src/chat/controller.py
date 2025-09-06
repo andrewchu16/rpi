@@ -6,8 +6,6 @@ from sqlalchemy import func, select
 from .config import chat_config
 from .schema import (
     ChatMessage,
-    ChatResponseInput,
-    ChatResponseOutput,
     ChatResponseCacheInfo,
     ChatResponseProcessingInfo,
     ChatInfoOutput,
@@ -63,115 +61,26 @@ class ChatController:
         ).scalar()
         if average_response_time is None:
             average_response_time = timedelta(0)
+            
+        average_first_token_time: timedelta | None = (
+            await db.execute(
+                select(
+                    func.avg(
+                        ProcessingInfo.first_token_timestamp - ProcessingInfo.start_timestamp
+                    )
+                ).where(ProcessingInfo.first_token_timestamp.is_not(None))
+            )
+        ).scalar()
+        if average_first_token_time is None:
+            average_first_token_time = timedelta(0)
+            
         return ChatInfoOutput(
             chats_created=chats_count,
             messages_received=messages_count,
             average_response_time=average_response_time.total_seconds(),
+            average_first_token_time=average_first_token_time.total_seconds(),
         )
 
-    async def create_response(
-        self, chat: ChatResponseInput, db: AsyncSession
-    ) -> ChatResponseOutput:
-        # Create user message from content
-        timestamp = datetime.now(timezone.utc)
-
-        # Save the user message to database
-        user_message_db = Message(
-            chat_id=chat.chat_id,
-            sender=ChatMessageSender.USER.value,
-            content=chat.message_content,
-            timestamp=timestamp,
-        )
-        db.add(user_message_db)
-        await db.flush()  # Get the ID without committing
-
-        # Get the most recent messages in the chat for context
-        result = await db.execute(
-            select(Message)
-            .where(Message.chat_id == chat.chat_id)
-            .order_by(Message.timestamp.desc())
-            .limit(chat_config.max_context_messages_count)
-        )
-        chat_messages = list(reversed(result.scalars().all()))
-
-        # Convert to ChatMessage objects for LLM
-        messages_for_llm = [
-            ChatMessage(
-                id=msg.id,
-                sender=ChatMessageSender(msg.sender),
-                content=msg.content,
-                timestamp=msg.timestamp,
-            )
-            for msg in chat_messages
-        ]
-
-        # Shorten messages to comply with chat config restrictions
-        messages_for_llm = shorten_chat_messages(messages_for_llm)
-
-        # Generate AI response
-        start_time = datetime.now(timezone.utc)
-        ai_response_content = await self.llm.generate_response(messages_for_llm)
-        end_time = datetime.now(timezone.utc)
-
-        # Create AI response message
-        ai_message_db = Message(
-            chat_id=chat.chat_id,
-            sender=ChatMessageSender.AI.value,
-            content=ai_response_content,
-            timestamp=end_time,
-        )
-        db.add(ai_message_db)
-        await db.flush()  # Get the ID without committing
-
-        # Create response message with database ID
-        response_message = ChatMessage(
-            id=ai_message_db.id,
-            sender=ChatMessageSender.AI.value,
-            content=ai_response_content,
-            timestamp=ai_message_db.timestamp,
-        )
-
-        # Handle cache info if requested
-        cache_info = None
-        cache_info_db = CacheInfo(
-            message_id=ai_message_db.id, hit=False, cache_timestamp=None, num_hits=0
-        )
-        db.add(cache_info_db)
-        await db.flush()
-        if chat.get_cache_info:
-            cache_info = ChatResponseCacheInfo(
-                id=cache_info_db.id,
-                message_id=cache_info_db.message_id,
-                hit=cache_info_db.hit,
-                cache_timestamp=cache_info_db.cache_timestamp,
-                num_hits=cache_info_db.num_hits,
-            )
-
-        # Handle processing info if requested
-        processing_info = None
-        processing_info_db = ProcessingInfo(
-            message_id=ai_message_db.id,
-            start_timestamp=start_time,
-            end_timestamp=end_time,
-        )
-        db.add(processing_info_db)
-        await db.flush()
-        if chat.get_processing_info:
-            processing_info = ChatResponseProcessingInfo(
-                id=processing_info_db.id,
-                message_id=processing_info_db.message_id,
-                start_timestamp=processing_info_db.start_timestamp,
-                end_timestamp=processing_info_db.end_timestamp,
-            )
-
-        # Commit all changes
-        await db.commit()
-
-        return ChatResponseOutput(
-            message=response_message,
-            cache_info=cache_info,
-            processing_info=processing_info,
-        )
 
     async def response_stream(
         self, chat_id: UUID, message_content: str, db: AsyncSession
@@ -234,6 +143,7 @@ class ChatController:
         processing_info_db = ProcessingInfo(
             message_id=ai_message_db.id,
             start_timestamp=datetime.now(timezone.utc),
+            first_token_timestamp=None,
             end_timestamp=None,
         )
         db.add(processing_info_db)
@@ -241,7 +151,13 @@ class ChatController:
 
         # Stream response
         accumulated_content = ""
+        first_token_sent = False
         async for token in self.llm.stream_response(messages_for_llm):
+            # Record timestamp when first token is sent to client
+            if not first_token_sent:
+                processing_info_db.first_token_timestamp = datetime.now(timezone.utc)
+                first_token_sent = True
+                
             accumulated_content += token
             # Escape newlines for proper SSE transmission - replace \n with \\n
             # This preserves newlines in the content while maintaining SSE format
@@ -289,6 +205,7 @@ class ChatController:
             id=processing_info.id,
             message_id=processing_info.message_id,
             start_timestamp=processing_info.start_timestamp,
+            first_token_timestamp=processing_info.first_token_timestamp,
             end_timestamp=processing_info.end_timestamp,
         )
 
