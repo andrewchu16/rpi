@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List
+from typing import List, Optional
 from .schema import ChatInfoOutput, ChatMessage, ChatResponseInput, ChatResponseOutput, ChatMessageSender, Chat
 from .controller import chat_controller
 from src.database import get_db
@@ -57,22 +57,31 @@ async def stream_response(
 
 @router.get("/messages", response_model=List[ChatMessage])
 async def get_messages(
-    limit: int = 100, offset: int = 0, db: AsyncSession = Depends(get_db)
+    chat_id: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get stored messages from the database.
+    If chat_id is provided, only return messages from that chat.
+    Otherwise, return all messages.
     """
     if limit > 1000:
         raise HTTPException(status_code=400, detail="Limit cannot exceed 1000")
 
-    result = await db.execute(
-        select(Message).order_by(Message.timestamp.desc()).limit(limit).offset(offset)
-    )
+    query = select(Message).order_by(Message.timestamp.desc()).limit(limit).offset(offset)
+    
+    if chat_id is not None:
+        query = query.where(Message.chat_id == chat_id)
+
+    result = await db.execute(query)
     messages = result.scalars().all()
 
     return [
         ChatMessage(
             id=msg.id,
+            chat_id=msg.chat_id,
             sender=ChatMessageSender(msg.sender),
             content=msg.content,
             timestamp=msg.timestamp,

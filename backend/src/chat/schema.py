@@ -21,6 +21,7 @@ class Chat(BaseModel):
 
 class ChatMessage(BaseModel):
     id: Optional[int] = Field(default=None, description="Database ID of the message")
+    chat_id: Optional[int] = Field(default=None, description="ID of the chat this message belongs to")
     sender: ChatMessageSender = Field(
         default=ChatMessageSender.USER, description="The sender of the message"
     )
