@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from uuid import UUID
+import json
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select
 
@@ -159,15 +160,141 @@ class ChatController:
                 first_token_sent = True
                 
             accumulated_content += token
-            # Escape newlines for proper SSE transmission - replace \n with \\n
-            # This preserves newlines in the content while maintaining SSE format
-            escaped_token = token.replace("\n", "\\n")
-            yield f"data: {escaped_token}\n\n"
+            # Send token as JSON object without escaping newlines
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
         # Update AI message with final content
         ai_message_db.content = accumulated_content
         processing_info_db.end_timestamp = datetime.now(timezone.utc)
         await db.commit()
+
+    async def response_stream_with_info(
+        self, chat_id: UUID, message_content: str, db: AsyncSession, include_processing_info: bool = False
+    ):
+        """
+        Stream a response with optional processing info events.
+        Yields either tokens (str) or processing info events (dict).
+        """
+        # Create timestamp for the message
+        timestamp = datetime.now(timezone.utc)
+
+        # Save the user message to database
+        user_message_db = Message(
+            chat_id=chat_id,
+            sender=ChatMessageSender.USER.value,
+            content=message_content,
+            timestamp=timestamp,
+        )
+        db.add(user_message_db)
+        await db.flush()
+
+        # Get the most recent messages in the chat for context
+        result = await db.execute(
+            select(Message)
+            .where(Message.chat_id == chat_id)
+            .order_by(Message.timestamp.desc())
+            .limit(chat_config.max_context_messages_count)
+        )
+        chat_messages = list(reversed(result.scalars().all()))
+
+        # Convert to ChatMessage objects for LLM
+        messages_for_llm = [
+            ChatMessage(
+                id=msg.id,
+                sender=ChatMessageSender(msg.sender),
+                content=msg.content,
+                timestamp=msg.timestamp,
+            )
+            for msg in chat_messages
+        ]
+
+        # Shorten messages to comply with chat config restrictions
+        messages_for_llm = shorten_chat_messages(messages_for_llm)
+
+        # Create AI response message
+        ai_message_db = Message(
+            chat_id=chat_id,
+            sender=ChatMessageSender.AI.value,
+            content="",
+            timestamp=datetime.now(timezone.utc),
+        )
+        db.add(ai_message_db)
+        await db.flush()
+
+        if include_processing_info:
+            yield {
+                "event": "message_created",
+                "data": {
+                    "message_id": str(ai_message_db.id),
+                    "timestamp": ai_message_db.timestamp.isoformat()
+                }
+            }
+
+        cache_info_db = CacheInfo(
+            message_id=ai_message_db.id, hit=False, cache_timestamp=None, num_hits=0
+        )
+        db.add(cache_info_db)
+        await db.flush()
+
+        start_time = datetime.now(timezone.utc)
+        processing_info_db = ProcessingInfo(
+            message_id=ai_message_db.id,
+            start_timestamp=start_time,
+            first_token_timestamp=None,
+            end_timestamp=None,
+        )
+        db.add(processing_info_db)
+        await db.flush()
+
+        if include_processing_info:
+            yield {
+                "event": "processing_started",
+                "data": {
+                    "message_id": str(ai_message_db.id),
+                    "start_timestamp": start_time.isoformat()
+                }
+            }
+
+        # Stream response
+        accumulated_content = ""
+        first_token_sent = False
+        async for token in self.llm.stream_response(messages_for_llm):
+            # Record timestamp when first token is sent to client
+            if not first_token_sent:
+                first_token_time = datetime.now(timezone.utc)
+                processing_info_db.first_token_timestamp = first_token_time
+                first_token_sent = True
+                
+                if include_processing_info:
+                    yield {
+                        "event": "first_token",
+                        "data": {
+                            "message_id": str(ai_message_db.id),
+                            "first_token_timestamp": first_token_time.isoformat(),
+                            "time_to_first_token": (first_token_time - start_time).total_seconds()
+                        }
+                    }
+                
+            accumulated_content += token
+            # Send token as JSON object without escaping newlines
+            yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+        # Update AI message with final content
+        end_time = datetime.now(timezone.utc)
+        ai_message_db.content = accumulated_content
+        processing_info_db.end_timestamp = end_time
+        await db.commit()
+
+        if include_processing_info:
+            yield {
+                "event": "processing_completed",
+                "data": {
+                    "message_id": str(ai_message_db.id),
+                    "end_timestamp": end_time.isoformat(),
+                    "total_time": (end_time - start_time).total_seconds(),
+                    "time_to_first_token": (processing_info_db.first_token_timestamp - start_time).total_seconds() if processing_info_db.first_token_timestamp else None
+                }
+            }
 
     async def get_message_cache_info(
         self, message_id: UUID, db: AsyncSession

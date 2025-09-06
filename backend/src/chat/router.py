@@ -28,8 +28,6 @@ async def create_chat(db: AsyncSession = Depends(get_db)):
     return await chat_controller.create_chat(db)
 
 
-
-
 @router.get("/info", response_model=ChatInfoOutput)
 async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
     """
@@ -42,21 +40,35 @@ async def get_info(db: AsyncSession = Depends(get_db)) -> ChatInfoOutput:
 async def stream_response(
     chat_id: UUID = Depends(validate_chat_exists),
     message_content: str = ...,
+    include_processing_info: bool = False,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Stream a response to the message. Only streams the response string.
+    Stream a response to the message. Can optionally include processing info events.
     """
 
     async def sse_stream():
+        import json
+        
         yield "event: start\n"
-        yield "data: streaming\n\n"
-        async for token in chat_controller.response_stream(
-            chat_id, message_content, db
+        yield f"data: {json.dumps({'type': 'status', 'content': 'streaming'})}\n\n"
+        
+        message_id = None
+        async for item in chat_controller.response_stream_with_info(
+            chat_id, message_content, db, include_processing_info
         ):
-            yield token
+            if isinstance(item, dict) and "event" in item:
+                # Processing info event
+                yield f"event: {item['event']}\n"
+                yield f"data: {json.dumps(item['data'])}\n\n"
+                if item['event'] == 'message_created':
+                    message_id = item['data']['message_id']
+            else:
+                # Regular token data (already formatted as JSON from controller)
+                yield item
+                
         yield "event: done\n"
-        yield "data: [END]\n\n"
+        yield f"data: {json.dumps({'type': 'status', 'content': '[END]', 'message_id': str(message_id) if message_id else None})}\n\n"
 
     headers = {"X-Accel-Buffering": "no"}
     return StreamingResponse(
