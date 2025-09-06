@@ -20,14 +20,14 @@ class LLM:
         print(f"Loading GGUF model from {model_path}...")
         self.llm = Llama(
             model_path=model_path,
-            n_ctx=chat_config.max_context_length,  # Context window size
+            n_ctx=chat_config.max_context_token_count,  # Context window size
             n_threads=None,  # Use all available CPU threads
             verbose=False,  # Set to True for debugging
         )
         logger.info("GGUF model loaded successfully!")
 
         # Set generation parameters
-        self.max_new_tokens: int = chat_config.max_response_tokens
+        self.max_new_tokens: int = chat_config.max_response_token_count
         self.temperature: float = 0.7
         self.top_p: float = 0.9
         self.top_k: int = 40

@@ -2,11 +2,11 @@ from pydantic_settings import BaseSettings
 
 
 class ChatConfig(BaseSettings):
-    max_messages: int = 50  # in messages
-    max_message_chars: int = 500  # in characters
+    max_context_messages_count: int = 20  # in messages
+    max_context_message_chars: int = 500  # in characters
 
-    max_context_length: int = 500  # in tokens
-    max_response_tokens: int = 300  # in tokens
+    max_context_token_count: int = 500  # in tokens
+    max_response_token_count: int = 300  # in tokens
     
     llm_model_name: str = "./models/Llama-3.2-1B-Instruct-Q4_K_S.gguf"
     embedding_model_name: str = "./models/embeddinggemma-300M-BF16.gguf"

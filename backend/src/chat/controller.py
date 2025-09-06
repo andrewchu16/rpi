@@ -85,14 +85,14 @@ class ChatController:
         db.add(user_message_db)
         await db.flush()  # Get the ID without committing
 
-        # Get all messages in the chat for context
+        # Get the most recent messages in the chat for context
         result = await db.execute(
             select(Message)
             .where(Message.chat_id == chat.chat_id)
-            .order_by(Message.timestamp.asc())
-            .limit(chat_config.max_messages)
+            .order_by(Message.timestamp.desc())
+            .limit(chat_config.max_context_messages_count)
         )
-        chat_messages = result.scalars().all()
+        chat_messages = list(reversed(result.scalars().all()))
 
         # Convert to ChatMessage objects for LLM
         messages_for_llm = [
@@ -192,13 +192,14 @@ class ChatController:
         db.add(user_message_db)
         await db.flush()
 
-        # Get all messages in the chat for context
+        # Get the most recent messages in the chat for context
         result = await db.execute(
             select(Message)
             .where(Message.chat_id == chat_id)
-            .order_by(Message.timestamp.asc())
+            .order_by(Message.timestamp.desc())
+            .limit(chat_config.max_context_messages_count)
         )
-        chat_messages = result.scalars().all()
+        chat_messages = list(reversed(result.scalars().all()))
 
         # Convert to ChatMessage objects for LLM
         messages_for_llm = [
@@ -238,7 +239,7 @@ class ChatController:
         db.add(processing_info_db)
         await db.flush()
 
-        # Stream response using LLaMA.cpp LLM
+        # Stream response
         accumulated_content = ""
         async for token in self.llm.stream_response(messages_for_llm):
             accumulated_content += token
