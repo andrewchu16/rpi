@@ -1,4 +1,24 @@
 services:
+  llama_cpp_embedding_server:
+    image: ghcr.io/ggml-org/llama.cpp:server-b6402
+    platform: linux/amd64
+    restart: unless-stopped
+    networks:
+      - web
+    volumes:
+      - ./models:/models:ro
+    command: ["--model", "/models/embeddinggemma-300M-BF16.gguf", "--port", "8000", "--host", "0.0.0.0", "--embedding"]
+
+  llama_cpp_llm_server:
+    image: ghcr.io/ggml-org/llama.cpp:server-b6402
+    platform: linux/amd64
+    restart: unless-stopped
+    networks:
+      - web
+    volumes:
+      - ./models:/models:ro
+    command: ["--model", "/models/Llama-3.2-1B-Instruct-Q4_K_S.gguf", "--port", "8000", "--host", "0.0.0.0", "-n", "512"]
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -21,12 +41,13 @@ services:
     cap_drop: [ "ALL" ]
     volumes:
       - ./backend/logs:/app/logs:rw
-      - ./backend/models:/app/models:ro
       - vector_store:/app/stores
     environment:
       - DEBUG=false
       - ALLOWED_ORIGINS=["chat.andrewchu.ca"]
       - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/chatdb
+      - LLAMA_CPP_EMBEDDING_SERVER_URL=http://llama_cpp_embedding_server:8000
+      - LLAMA_CPP_LLM_SERVER_URL=http://llama_cpp_llm_server:8000
     depends_on:
       - postgres
     env_file:

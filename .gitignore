@@ -10,3 +10,7 @@ webroot/.well-known/acme-challenge/
 nginx-cache/
 
 .env
+
+# Models
+models/*
+!.gitkeep
