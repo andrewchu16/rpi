@@ -7,15 +7,13 @@ from uuid import UUID
 from .schema import (
     ChatInfoOutput,
     ChatMessage,
-    ChatResponseCacheInfo,
     ChatMessageSender,
     Chat,
-    ChatResponseProcessingInfo,
 )
 from .controller import chat_controller
 from src.database import get_db
 from .models import Message
-from .dependencies import validate_chat_exists, validate_message_exists
+from .dependencies import validate_chat_exists
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -41,32 +39,29 @@ async def stream_response(
     chat_id: UUID = Depends(validate_chat_exists),
     message_content: str = ...,
     include_processing_info: bool = False,
+    include_cache_info: bool = False,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Stream a response to the message. Can optionally include processing info events.
+    Stream a response to the message. Can optionally include processing info and cache info events.
     """
 
     async def sse_stream():
         import json
-        
+
         yield "event: start\n"
         yield f"data: {json.dumps({'type': 'status', 'content': 'streaming'})}\n\n"
-        
+
         message_id = None
-        async for item in chat_controller.response_stream_with_info(
-            chat_id, message_content, db, include_processing_info
+        async for item in chat_controller.response_stream(
+            chat_id, message_content, db, include_processing_info, include_cache_info
         ):
             if isinstance(item, dict) and "event" in item:
-                # Processing info event
                 yield f"event: {item['event']}\n"
                 yield f"data: {json.dumps(item['data'])}\n\n"
-                if item['event'] == 'message_created':
-                    message_id = item['data']['message_id']
-            else:
-                # Regular token data (already formatted as JSON from controller)
-                yield item
-                
+                if item["event"] == "message_created":
+                    message_id = item["data"]["message_id"]
+
         yield "event: done\n"
         yield f"data: {json.dumps({'type': 'status', 'content': '[END]', 'message_id': str(message_id) if message_id else None})}\n\n"
 
@@ -117,33 +112,3 @@ async def get_messages(
         )
         for msg in messages
     ]
-
-
-@router.get("/messages/{message_id}/cache", response_model=ChatResponseCacheInfo)
-async def get_message_cache_info(
-    message_id: UUID = Depends(validate_message_exists),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Get cache information for a specific message.
-    """
-    try:
-        return await chat_controller.get_message_cache_info(message_id, db)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-
-
-@router.get(
-    "/messages/{message_id}/processing", response_model=ChatResponseProcessingInfo
-)
-async def get_message_processing_info(
-    message_id: UUID = Depends(validate_message_exists),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Get processing information for a specific message.
-    """
-    try:
-        return await chat_controller.get_message_processing_info(message_id, db)
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

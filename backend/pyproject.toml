@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "backend server for chat.andrewchu.ca"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -11,8 +11,7 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
-    "llama-cpp-python>=0.2.0",
+    "llama-cpp-python>=0.3.16",
     "hnswlib>=0.8.0",
-    "sentence-transformers>=5.1.0",
 ]
 required-environments = "manylinux_2_24_aarch64"

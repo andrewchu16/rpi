@@ -7,7 +7,7 @@ from enum import StrEnum
 
 class ChatMessageSender(StrEnum):
     USER = "user"
-    AI = "AI"
+    AI = "assistant"
 
 
 class Chat(BaseModel):
@@ -38,17 +38,17 @@ class ChatResponseCacheInfo(BaseModel):
         default=None, description="Database ID of the cache info"
     )
     message_id: Optional[UUID] = Field(
-        default=None, description="ID of the related message"
+        default=None, description="ID of the retrieved message"
     )
     hit: bool = Field(
         default=False, description="Whether the message was found in cache"
     )
-    cache_timestamp: Optional[datetime] = Field(
+    message_timestamp: Optional[datetime] = Field(
         default=None,
-        description="The timestamp when the message was cached",
+        description="The timestamp when the retrieved message was generated",
     )
     num_hits: int = Field(
-        default=0, description="The number of times the message was hit in cache"
+        default=0, description="The number of times this message has been retrieved"
     )
 
 
@@ -86,3 +86,13 @@ class ChatInfoOutput(BaseModel):
     average_first_token_time: float = Field(
         default=0, description="The average time to first token in seconds"
     )
+
+
+class ChatResponseStreamEventType(StrEnum):
+    MESSAGE_CREATED = "message_created"
+    PROCESSING_STARTED = "processing_started"
+    FIRST_TOKEN = "first_token"
+    PROCESSING_COMPLETED = "processing_completed"
+    CACHE_INFO = "cache_info"
+    STATUS = "status"
+    DONE = "done"

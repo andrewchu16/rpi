@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 
 
-class LFUHotIndex:
+class VectorStore:
     """
     Hot in-RAM HNSW index with LFU eviction (LRU tie-break within same freq).
     - O(1) get/put/evict using:
