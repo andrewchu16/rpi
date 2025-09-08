@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import StrEnum
 
 
@@ -10,15 +10,26 @@ class ChatMessageSender(StrEnum):
     AI = "assistant"
 
 
-class Chat(BaseModel):
+class BaseModelWithUUID(BaseModel):
+    """Base model with UUID serialization configuration."""
+    model_config = ConfigDict(
+        # Serialize UUID and datetime objects properly
+        json_encoders={
+            UUID: str,
+            # datetime: lambda v: v.isoformat(),
+        },
+    )
+
+
+class Chat(BaseModelWithUUID):
     id: Optional[UUID] = Field(default=None, description="Database ID of the chat")
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the chat was created",
     )
+    
 
-
-class ChatMessage(BaseModel):
+class ChatMessage(BaseModelWithUUID):
     id: Optional[UUID] = Field(default=None, description="Database ID of the message")
     chat_id: Optional[UUID] = Field(
         default=None, description="ID of the chat this message belongs to"
@@ -33,7 +44,7 @@ class ChatMessage(BaseModel):
     )
 
 
-class ChatResponseCacheInfo(BaseModel):
+class ChatResponseCacheInfo(BaseModelWithUUID):
     id: Optional[UUID] = Field(
         default=None, description="Database ID of the cache info"
     )
@@ -52,7 +63,7 @@ class ChatResponseCacheInfo(BaseModel):
     )
 
 
-class ChatResponseProcessingInfo(BaseModel):
+class ChatResponseProcessingInfo(BaseModelWithUUID):
     id: Optional[UUID] = Field(
         default=None, description="Database ID of the processing info"
     )

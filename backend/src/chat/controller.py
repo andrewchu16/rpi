@@ -46,7 +46,7 @@ class ChatController:
         if self._vector_store is None:
             # Initialize with reasonable defaults - you may want to adjust these
             self._vector_store = VectorStore(
-                dim=384,  # Adjust based on your embedding model dimensions
+                dim=chat_config.embedding_dim,  # Adjust based on your embedding model dimensions
                 capacity=1000,  # Adjust based on your needs
                 space="cosine"
             )
@@ -157,9 +157,10 @@ class ChatController:
         
         # Step 1: Summarize the conversation history
         summarized_query = await self.llm.summarize_conversation(messages_for_llm)
+        logger.info(f"Summarized query: {summarized_query}")
         
         # Step 2: Embed the summarized query
-        query_embedding = self.embedding.embed_query(summarized_query)
+        query_embedding = await self.embedding.embed_query(summarized_query)
         
         # Step 3: Search for similar cached responses
         search_results = self.vector_store.search(query_embedding, k=1)
@@ -168,7 +169,7 @@ class ChatController:
         if search_results and len(search_results) > 0:
             best_match_id, similarity_score = search_results[0]
             # Cosine similarity threshold - adjust as needed (0.9 means very similar)
-            if similarity_score > 0.9:
+            if 1 - similarity_score > 0.9:
                 try:
                     # Try to retrieve the cached message
                     cached_result = await db.execute(
@@ -188,7 +189,7 @@ class ChatController:
                         
                         # Stream the cached response and cache info if requested
                         async for item in self._stream_cached_response(
-                            cached_message, start_time, include_processing_info, include_cache_info, cache_info
+                            cached_message, start_time, include_processing_info, cache_info
                         ):
                             yield item
                         return
@@ -270,8 +271,8 @@ class ChatController:
         processing_info_db.end_timestamp = end_time
         
         # Step 6: Add the new response to the vector store cache
-        response_embedding = self.embedding.embed_query(accumulated_content)
-        self.vector_store.add(str(ai_message_db.id), response_embedding)
+        # response_embedding = await self.embedding.embed_query(accumulated_content)
+        self.vector_store.add(str(ai_message_db.id), query_embedding)
         
         await db.commit()
 
@@ -297,7 +298,7 @@ class ChatController:
             )
             yield {
                 "event": ChatResponseStreamEventType.CACHE_INFO,
-                "data": cache_info_response.model_dump(),
+                "data": cache_info_response.model_dump(mode='json'),
             }
 
     async def _stream_cached_response(
@@ -339,7 +340,7 @@ class ChatController:
         for i, char in enumerate(cached_message.content):
             yield {"data": {"type": "token", "content": char}}
             # Small delay to simulate streaming
-            if i % 10 == 0:  # Delay every 5 characters
+            if i % 5 == 0:  # Delay every 5 characters
                 await asyncio.sleep(0.01)
         
         end_time = datetime.now(timezone.utc)
@@ -366,7 +367,7 @@ class ChatController:
             )
             yield {
                 "event": ChatResponseStreamEventType.CACHE_INFO, 
-                "data": cache_info_response.model_dump(),
+                "data": cache_info_response.model_dump(mode='json'),
             }
 
 

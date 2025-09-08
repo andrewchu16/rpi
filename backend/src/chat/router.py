@@ -56,11 +56,13 @@ async def stream_response(
         async for item in chat_controller.response_stream(
             chat_id, message_content, db, include_processing_info, include_cache_info
         ):
-            if isinstance(item, dict) and "event" in item:
-                yield f"event: {item['event']}\n"
+            if isinstance(item, dict):
+                if "event" in item:
+                    
+                    yield f"event: {item['event']}\n"
+                    if item["event"] == "message_created":
+                        message_id = item["data"]["message_id"]
                 yield f"data: {json.dumps(item['data'])}\n\n"
-                if item["event"] == "message_created":
-                    message_id = item["data"]["message_id"]
 
         yield "event: done\n"
         yield f"data: {json.dumps({'type': 'status', 'content': '[END]', 'message_id': str(message_id) if message_id else None})}\n\n"

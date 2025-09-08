@@ -27,7 +27,7 @@ class LLM:
 
     def __init__(self) -> None:
         """Initialize the LLaMA.cpp-based LLM model."""
-        model_path: str = chat_config.llm_model_name
+        model_path: str = chat_config.llm_model_path
 
         # Load the model using llama-cpp-python
         logger.info(f"Loading GGUF model from {model_path}...")
@@ -185,9 +185,6 @@ class LLM:
                     if "content" in delta:
                         content = delta["content"]
                         yield content
-
-                        # Small delay to simulate streaming
-                        await asyncio.sleep(0.05)
 
         except Exception as e:
             logger.error(f"Error streaming response: {e}")

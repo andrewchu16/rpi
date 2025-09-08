@@ -11,7 +11,9 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.43",
     "uvicorn>=0.35.0",
-    "llama-cpp-python>=0.3.16",
+    "httpx>=0.27.0",
     "hnswlib>=0.8.0",
+    "sentence-transformers>=5.1.0",
+    "llama-cpp-python>=0.3.16",
 ]
 required-environments = "manylinux_2_24_aarch64"

@@ -214,22 +214,36 @@ class VectorStore:
         Returns:
             List of tuples containing (id_string, distance) for the k nearest neighbors.
             Only returns items that are currently in the index (skips deleted items).
+            Returns empty list if index is empty.
         """
         q = np.asarray(query_vec, dtype=np.float32).reshape(1, -1)
         with self.lock:
-            labels, dists = self.index.knn_query(q, k=k)
-            lbls = labels[0].tolist()
-            ds = dists[0].tolist()
+            # Check if index is empty or has fewer elements than requested
+            current_count = len(self.key_info)
+            if current_count == 0:
+                return []
+            
+            # Adjust k to not exceed available elements
+            actual_k = min(k, current_count)
+            
+            try:
+                labels, dists = self.index.knn_query(q, k=actual_k)
+                lbls = labels[0].tolist()
+                ds = dists[0].tolist()
 
-            # Map labels -> ids; deleted labels might appear as unknown -> skip
-            ids = [self.label_to_id.get(int(label)) for label in lbls]
+                # Map labels -> ids; deleted labels might appear as unknown -> skip
+                ids = [self.label_to_id.get(int(label)) for label in lbls]
 
-            # Bump freq for hits we actually own
-            for i in ids:
-                if i is not None and i in self.key_info:
-                    self._bump_freq(i)
+                # Bump freq for hits we actually own
+                for i in ids:
+                    if i is not None and i in self.key_info:
+                        self._bump_freq(i)
 
-            return [(i, float(d)) for i, d in zip(ids, ds) if i is not None]
+                return [(i, float(d)) for i, d in zip(ids, ds) if i is not None]
+            except Exception as e:
+                # Log the error and return empty list as fallback
+                print(f"Warning: Vector search failed: {e}")
+                return []
 
     def save(self, dirpath: Union[str, Path]) -> None:
         """
