@@ -6,6 +6,7 @@ from datetime import datetime
 from .config import config
 from .database import init_db, close_db
 from .chat import chat_router
+from .chat.controller import chat_controller
 
 # Import models to ensure they are registered with Base.metadata
 from .chat.models import Message, CacheInfo, ProcessingInfo
@@ -16,10 +17,19 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
     logger.info("Starting the application")
+    
     # Initialize database
     await init_db()
     logger.info("Database initialized")
+    
+    # Preload ML models during startup
+    logger.info("Preloading ML models...")
+    chat_controller.llm.preload_model()
+    chat_controller.embedding.preload_model()
+    logger.info("ML models preloaded successfully")
+    
     yield
+    
     logger.info("Shutting down the application")
     # Cleanup database
     await close_db()

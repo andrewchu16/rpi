@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import AsyncGenerator, List, Dict
 from llama_cpp import Llama
@@ -27,23 +26,32 @@ class LLM:
 
     def __init__(self) -> None:
         """Initialize the LLaMA.cpp-based LLM model."""
-        model_path: str = chat_config.llm_model_path
-
-        # Load the model using llama-cpp-python
-        logger.info(f"Loading GGUF model from {model_path}...")
-        self.llm = Llama(
-            model_path=model_path,
-            n_ctx=chat_config.max_context_token_count,  # Context window size
-            n_threads=None,  # Use all available CPU threads
-            verbose=False,  # Set to True for debugging
-        )
-        logger.info("GGUF model loaded successfully!")
+        self.llm: Llama | None = None
+        self.model_path: str = chat_config.llm_model_path
 
         # Set generation parameters
         self.max_new_tokens: int = chat_config.max_response_token_count
         self.temperature: float = 0.7
         self.top_p: float = 0.9
         self.top_k: int = 20
+
+    def preload_model(self) -> None:
+        """Preload the LLM model during application startup."""
+        if self.llm is None:
+            logger.info(f"Loading GGUF model from {self.model_path}...")
+            self.llm = Llama(
+                model_path=self.model_path,
+                n_ctx=chat_config.max_context_token_count,  # Context window size
+                n_threads=None,  # Use all available CPU threads
+                verbose=False,  # Set to True for debugging
+            )
+            logger.info("GGUF model loaded successfully!")
+
+    def _ensure_model_loaded(self) -> Llama:
+        """Ensure the model is loaded and return it."""
+        if self.llm is None:
+            self.preload_model()
+        return self.llm
 
     def _format_conversation(
         self, conversation_history: List[ChatMessage], system_prompt: str = None
@@ -87,7 +95,8 @@ class LLM:
         )
 
         try:
-            response = self.llm.create_chat_completion(
+            llm = self._ensure_model_loaded()
+            response = llm.create_chat_completion(
                 messages=messages,
                 max_tokens=self.max_new_tokens,
                 temperature=self.temperature,
@@ -124,12 +133,13 @@ class LLM:
         )
 
         try:
-            response = self.llm.create_chat_completion(
+            llm = self._ensure_model_loaded()
+            response = llm.create_chat_completion(
                 messages=messages,
                 max_tokens=50,  # Keep summary short
-                temperature=0.3,  # Lower temperature for more focused summary
+                temperature=0.2,  # Lower temperature for more focused summary
                 top_p=0.8,
-                top_k=20,
+                top_k=10,
                 stop=[
                     "<|end|>",
                     "<|user|>",
@@ -169,7 +179,8 @@ class LLM:
 
         try:
             # Create streaming completion
-            stream = self.llm.create_chat_completion(
+            llm = self._ensure_model_loaded()
+            stream = llm.create_chat_completion(
                 messages=messages,
                 max_tokens=self.max_new_tokens,
                 temperature=self.temperature,

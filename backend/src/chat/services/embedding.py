@@ -14,16 +14,22 @@ class Embedding:
     def __init__(self) -> None:
         """Initialize the embedding service with sentence-transformers model."""
         self.model_name = "mixedbread-ai/mxbai-embed-xsmall-v1"
-        self.model: SentenceTransformer | None = None
+        self._model: SentenceTransformer | None = None
         logger.info(f"Embedding service configured to use model: {self.model_name}")
 
-    def _load_model(self) -> SentenceTransformer:
-        """Load the sentence transformer model if not already loaded."""
-        if self.model is None:
+    def preload_model(self) -> None:
+        """Preload the embedding model during application startup."""
+        if self._model is None:
             logger.info(f"Loading embedding model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
+            self._model = SentenceTransformer(self.model_name)
             logger.info("Embedding model loaded successfully")
-        return self.model
+
+    @property
+    def model(self) -> SentenceTransformer:
+        """Get the embedding model, loading it if necessary."""
+        if self._model is None:
+            self.preload_model()
+        return self._model
 
     async def embed_query(self, query: str) -> List[float]:
         """Generate embeddings for a query using sentence-transformers.
@@ -40,7 +46,7 @@ class Embedding:
         try:
             # Run the embedding in a thread pool to avoid blocking the event loop
             loop = asyncio.get_event_loop()
-            model = self._load_model()
+            model = self.model
             
             # Generate embedding using the model
             embedding_func = partial(model.encode, query, convert_to_tensor=False)
