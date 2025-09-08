@@ -58,7 +58,6 @@ async def stream_response(
         ):
             if isinstance(item, dict):
                 if "event" in item:
-                    
                     yield f"event: {item['event']}\n"
                     if item["event"] == "message_created":
                         message_id = item["data"]["message_id"]

@@ -189,7 +189,7 @@ class ChatController:
                         
                         # Stream the cached response and cache info if requested
                         async for item in self._stream_cached_response(
-                            cached_message, start_time, include_processing_info, cache_info
+                            cached_message, start_time, include_processing_info, cache_info, db
                         ):
                             yield item
                         return
@@ -302,9 +302,21 @@ class ChatController:
             }
 
     async def _stream_cached_response(
-        self, cached_message: Message, start_time: datetime, include_processing_info: bool, cache_info: CacheInfo = None
+        self, cached_message: Message, start_time: datetime, include_processing_info: bool, cache_info: CacheInfo = None, db: AsyncSession = None
     ):
         """Stream a cached response with simulated timing."""
+        # Create processing info record for cached response if database session is available
+        processing_info_db = None
+        if db is not None:
+            processing_info_db = ProcessingInfo(
+                message_id=cached_message.id,
+                start_timestamp=start_time,
+                first_token_timestamp=None,
+                end_timestamp=None,
+            )
+            db.add(processing_info_db)
+            await db.flush()
+        
         if include_processing_info:
             yield {
                 "event": ChatResponseStreamEventType.MESSAGE_CREATED, 
@@ -326,6 +338,11 @@ class ChatController:
             
             # Simulate first token time for cached responses
             first_token_time = datetime.now(timezone.utc)
+            
+            # Update processing info with first token timestamp if database session is available
+            if processing_info_db is not None:
+                processing_info_db.first_token_timestamp = first_token_time
+            
             yield {
                 "event": ChatResponseStreamEventType.FIRST_TOKEN,
                 "data": {
@@ -344,6 +361,11 @@ class ChatController:
                 await asyncio.sleep(0.01)
         
         end_time = datetime.now(timezone.utc)
+        
+        # Update processing info with end timestamp and commit if database session is available
+        if processing_info_db is not None:
+            processing_info_db.end_timestamp = end_time
+            await db.commit()
         
         if include_processing_info:
             yield {
