@@ -15,26 +15,20 @@ RUN apt-get update \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml and uv.lock
-COPY pyproject.toml uv.lock ./
+# Create non-root user
+RUN useradd -u 10001 -m app
+
+# Copy pyproject.toml and uv.lock with proper ownership
+COPY --chown=app:app pyproject.toml uv.lock ./
 
 # Install dependencies using uv
 RUN uv sync --frozen
 
-# Create non-root user
-RUN useradd -u 10001 -m app
+# Copy logging config with proper ownership
+COPY --chown=app:app logging_config.json ./
 
-# Create stores directory
-RUN mkdir -p /app/stores
-
-# Copy logging config
-COPY logging_config.json ./
-
-# Copy source code
-COPY src/ ./src
-
-# Fix permissions and ownership for the app user
-RUN chown -R app:app /app
+# Copy source code with proper ownership
+COPY --chown=app:app src/ ./src
 
 USER app
 
