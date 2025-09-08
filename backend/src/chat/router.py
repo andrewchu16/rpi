@@ -72,7 +72,7 @@ async def stream_response(
     )
 
 
-@router.get("/messages", response_model=list[ChatMessage])
+# @router.get("/messages", response_model=list[ChatMessage])
 async def get_messages(
     chat_id: Optional[UUID] = None,
     limit: int = 100,
